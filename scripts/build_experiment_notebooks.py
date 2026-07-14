@@ -648,6 +648,10 @@ def _settings_code(instance: NotebookInstance) -> str:
     # the bounded HTTP client instead; the verified runtime refreshes only the
     # narrowly identified transient signed-blob 403 and preserves partial blobs.
     os.environ['HF_HUB_DISABLE_XET'] = '1'
+    if STAGE_ID == '06':
+        # Stage-06 private closure objects are small; prefer the documented raw
+        # route before entering the native Xet client when a signed CDN URL fails.
+        os.environ['E2AM_STAGE06_RAW_HTTP'] = '1'
     os.environ['E2AM_SYNC_INTERVAL_SECONDS'] = str(SYNC_INTERVAL_SECONDS)
     os.environ['E2AM_HF_REPO_ID'] = HF_REPO_ID
     print({{
@@ -1218,10 +1222,14 @@ def _prepare_code(instance: NotebookInstance) -> str:
         # if necessary, and preserve the infeasibility in durable policy metadata.
         import inspect as _inspect
         import contextlib as _contextlib
+        import hashlib as _hashlib
         import huggingface_hub as _huggingface_hub
         import huggingface_hub.constants as _hf_constants
+        import pathlib as _pathlib
+        import requests as _requests
         import signal as _signal
         import time as _time
+        import urllib.parse as _urlparse
         from e2am_memrag import experiment_pipeline as _experiment_pipeline
         from e2am_memrag import pareto_router as _pareto_router
         from e2am_memrag.rag_engine import (
@@ -1234,6 +1242,9 @@ def _prepare_code(instance: NotebookInstance) -> str:
         # large public model downloads remain on the bounded HTTP path.
         _stage06_http_hub_download = _huggingface_hub.hf_hub_download
         _stage06_xet_timeout_seconds = 120
+        _stage06_raw_http_enabled = (
+            os.environ.get('E2AM_STAGE06_RAW_HTTP') == '1'
+        )
 
         class _Stage06XetTimeout(TimeoutError):
             pass
@@ -1267,6 +1278,58 @@ def _prepare_code(instance: NotebookInstance) -> str:
                         previous_timer[1],
                     )
 
+        def _stage06_raw_download(kwargs):
+            if not _stage06_raw_http_enabled:
+                raise RuntimeError('Stage-06 raw HTTP fallback is disabled')
+            repo_id = str(kwargs.get('repo_id', ''))
+            repo_type = str(kwargs.get('repo_type') or 'model')
+            revision = str(kwargs.get('revision', ''))
+            filename = str(kwargs.get('filename', ''))
+            endpoint = os.environ.get(
+                'HF_ENDPOINT', 'https://huggingface.co'
+            ).rstrip('/')
+            if repo_type == 'dataset':
+                prefix = f'{endpoint}/datasets/{repo_id}'
+            elif repo_type == 'space':
+                prefix = f'{endpoint}/spaces/{repo_id}'
+            else:
+                prefix = f'{endpoint}/{repo_id}'
+            url = (
+                f'{prefix}/raw/'
+                f'{_urlparse.quote(revision, safe="")}/'
+                f'{_urlparse.quote(filename, safe="/")}'
+            )
+            cache_root = _pathlib.Path(
+                os.environ.get('HF_HOME', '/tmp')
+            ) / 'stage06-raw-http'
+            cache_root.mkdir(parents=True, exist_ok=True)
+            cache_key = _hashlib.sha256(
+                f'{repo_type}|{repo_id}|{revision}|{filename}'.encode()
+            ).hexdigest()
+            destination = cache_root / cache_key
+            if destination.is_file() and destination.stat().st_size > 0:
+                return str(destination)
+            part = destination.with_suffix('.part')
+            headers = {}
+            token = kwargs.get('token')
+            if isinstance(token, str) and token.strip():
+                headers['Authorization'] = f'Bearer {token.strip()}'
+            response = _requests.get(
+                url,
+                headers=headers,
+                stream=True,
+                timeout=(15, 30),
+            )
+            response.raise_for_status()
+            with part.open('wb') as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 128):
+                    if chunk:
+                        handle.write(chunk)
+            if not part.is_file() or part.stat().st_size <= 0:
+                raise RuntimeError('raw HTTP returned an empty artifact')
+            os.replace(part, destination)
+            return str(destination)
+
         def _stage06_artifact_download(**kwargs):
             try:
                 return _stage06_http_hub_download(**kwargs)
@@ -1289,6 +1352,23 @@ def _prepare_code(instance: NotebookInstance) -> str:
                     },
                     flush=True,
                 )
+                try:
+                    raw_path = _stage06_raw_download(kwargs)
+                    print(
+                        'STAGE06_ARTIFACT_RAW_HTTP_SUCCESS',
+                        {'filename': kwargs.get('filename')},
+                        flush=True,
+                    )
+                    return raw_path
+                except Exception as raw_error:
+                    print(
+                        'STAGE06_ARTIFACT_RAW_HTTP_UNAVAILABLE',
+                        {
+                            'filename': kwargs.get('filename'),
+                            'reason': type(raw_error).__name__,
+                        },
+                        flush=True,
+                    )
                 previous_xet_concurrency = os.environ.get(
                     'HF_XET_NUM_CONCURRENT_RANGE_GETS'
                 )
@@ -1363,7 +1443,7 @@ def _prepare_code(instance: NotebookInstance) -> str:
                         os.environ['HF_HUB_DISABLE_XET'] = previous_disable_xet_env
 
         _huggingface_hub.hf_hub_download = _stage06_artifact_download
-        print('STAGE06_ARTIFACT_TRANSPORT_PATCH_READY: signed-http-to-xet-v2')
+        print('STAGE06_ARTIFACT_TRANSPORT_PATCH_READY: signed-http-to-raw-v1')
 
         STAGE06_PROTOCOL_AMENDMENT = {
             'amendment_id': 'stage06-threshold-completion-separation-v1',
