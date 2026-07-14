@@ -1292,7 +1292,21 @@ def _prepare_code(instance: NotebookInstance) -> str:
                 previous_xet_concurrency = os.environ.get(
                     'HF_XET_NUM_CONCURRENT_RANGE_GETS'
                 )
-                os.environ['HF_XET_NUM_CONCURRENT_RANGE_GETS'] = '1'
+                xet_tuning = {
+                    'HF_XET_NUM_CONCURRENT_RANGE_GETS': '1',
+                    'HF_XET_FIXED_DOWNLOAD_CONCURRENCY': '1',
+                    'HF_XET_CLIENT_ENABLE_ADAPTIVE_CONCURRENCY': '0',
+                    'HF_XET_CLIENT_RETRY_MAX_ATTEMPTS': '2',
+                    'HF_XET_CLIENT_RETRY_BASE_DELAY': '1s',
+                    'HF_XET_CLIENT_RETRY_MAX_DURATION': '30s',
+                    'HF_XET_CLIENT_CONNECT_TIMEOUT': '15s',
+                    'HF_XET_CLIENT_READ_TIMEOUT': '30s',
+                    'HF_XET_CLIENT_IDLE_CONNECTION_TIMEOUT': '30s',
+                }
+                previous_xet_tuning = {
+                    key: os.environ.get(key) for key in xet_tuning
+                }
+                os.environ.update(xet_tuning)
                 previous_hub_timeout = getattr(
                     _hf_constants, 'HF_HUB_DOWNLOAD_TIMEOUT', None
                 )
@@ -1337,6 +1351,11 @@ def _prepare_code(instance: NotebookInstance) -> str:
                         os.environ['HF_XET_NUM_CONCURRENT_RANGE_GETS'] = (
                             previous_xet_concurrency
                         )
+                    for key, previous_value in previous_xet_tuning.items():
+                        if previous_value is None:
+                            os.environ.pop(key, None)
+                        else:
+                            os.environ[key] = previous_value
                     _hf_constants.HF_HUB_DISABLE_XET = previous_disable_xet
                     if previous_disable_xet_env is None:
                         os.environ.pop('HF_HUB_DISABLE_XET', None)
@@ -1344,7 +1363,7 @@ def _prepare_code(instance: NotebookInstance) -> str:
                         os.environ['HF_HUB_DISABLE_XET'] = previous_disable_xet_env
 
         _huggingface_hub.hf_hub_download = _stage06_artifact_download
-        print('STAGE06_ARTIFACT_TRANSPORT_PATCH_READY: signed-http-to-xet-v1')
+        print('STAGE06_ARTIFACT_TRANSPORT_PATCH_READY: signed-http-to-xet-v2')
 
         STAGE06_PROTOCOL_AMENDMENT = {
             'amendment_id': 'stage06-threshold-completion-separation-v1',
