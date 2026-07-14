@@ -1,0 +1,22 @@
+schema_version: 2
+project: e2am-memrag
+experiment:
+  name: e2am-memrag-v3r1
+  seed: 4622
+  purpose: controlled evidence-memory-energy routing experiment
+runtime:
+  device_policy: single_gpu
+  gpu_class_expected: NVIDIA T4
+  shard_rows: 128
+  max_retries_per_unit: 0
+  fail_fast: true
+sync:
+  interval_seconds: 1200
+  max_commit_attempts_per_hour: 8
+  max_files_per_commit: 32
+  repo_id: Shanmuk4622/E2AM-MemRAG-Traces
+  repo_type: dataset
+measurement:
+  nvml_sample_interval_seconds: 0.05
+  synchronize_cuda: true
+  report_carbon_as_scenario_only: true

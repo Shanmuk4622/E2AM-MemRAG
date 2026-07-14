@@ -1,0 +1,38 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+.ipynb_checkpoints/
+.agents/
+.codex/
+.lane01-wheelhouse-tmp/
+
+# Local experiment state is durable data, not source code.
+runs/
+artifacts/
+hf_cache/
+model_cache/
+data_cache/
+
+# Secrets must never enter source control.
+.env
+.env.*
+!.env.example
+*token*
+!docs/**/*token*
+
+# Generated reports and temporary files.
+build/
+dist/
+tmp/
+*.tmp
+*.log
+*.whl
+.DS_Store
+Thumbs.db

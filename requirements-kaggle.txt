@@ -1,0 +1,15 @@
+# Keep Kaggle's preinstalled torch/CUDA stack. Replacing torch is a common source
+# of CUDA and bitsandbytes breakage. Exact runtime versions are captured per run.
+PyYAML==6.0.3
+# Pin a mutually compatible, mature model-runtime stack. Keep Kaggle's torch
+# wheel untouched so its CUDA build remains aligned with the notebook image.
+huggingface-hub==0.36.2
+hf-xet==1.5.1
+nvidia-ml-py==13.610.43
+numpy>=1.26,<2.3
+scikit-learn==1.7.2
+joblib==1.5.3
+transformers==4.57.6
+accelerate==1.12.0
+tokenizers==0.22.1
+safetensors==0.7.0
