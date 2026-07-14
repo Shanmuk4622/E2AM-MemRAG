@@ -1217,8 +1217,11 @@ def _prepare_code(instance: NotebookInstance) -> str:
         # success are separate: search the full conservative range, freeze tau=1.0
         # if necessary, and preserve the infeasibility in durable policy metadata.
         import inspect as _inspect
+        import contextlib as _contextlib
         import huggingface_hub as _huggingface_hub
         import huggingface_hub.constants as _hf_constants
+        import signal as _signal
+        import time as _time
         from e2am_memrag import experiment_pipeline as _experiment_pipeline
         from e2am_memrag import pareto_router as _pareto_router
         from e2am_memrag.rag_engine import (
@@ -1230,6 +1233,39 @@ def _prepare_code(instance: NotebookInstance) -> str:
         # rotated key. Retry only that exact signature failure through Xet/CAS;
         # large public model downloads remain on the bounded HTTP path.
         _stage06_http_hub_download = _huggingface_hub.hf_hub_download
+        _stage06_xet_timeout_seconds = 120
+
+        class _Stage06XetTimeout(TimeoutError):
+            pass
+
+        @_contextlib.contextmanager
+        def _stage06_xet_deadline(seconds):
+            # Kaggle is Linux, but keep the patch import-safe on local Windows
+            # development machines where SIGALRM is unavailable.
+            if not hasattr(_signal, 'SIGALRM'):
+                yield
+                return
+            previous_handler = _signal.getsignal(_signal.SIGALRM)
+            previous_timer = _signal.setitimer(_signal.ITIMER_REAL, 0.0)
+
+            def _alarm_handler(_signum, _frame):
+                raise _Stage06XetTimeout(
+                    f'Xet artifact transfer exceeded {seconds} seconds'
+                )
+
+            _signal.signal(_signal.SIGALRM, _alarm_handler)
+            _signal.setitimer(_signal.ITIMER_REAL, float(seconds))
+            try:
+                yield
+            finally:
+                _signal.setitimer(_signal.ITIMER_REAL, 0.0)
+                _signal.signal(_signal.SIGALRM, previous_handler)
+                if previous_timer[0] > 0.0:
+                    _signal.setitimer(
+                        _signal.ITIMER_REAL,
+                        previous_timer[0],
+                        previous_timer[1],
+                    )
 
         def _stage06_artifact_download(**kwargs):
             try:
@@ -1253,9 +1289,54 @@ def _prepare_code(instance: NotebookInstance) -> str:
                     },
                     flush=True,
                 )
+                previous_xet_concurrency = os.environ.get(
+                    'HF_XET_NUM_CONCURRENT_RANGE_GETS'
+                )
+                os.environ['HF_XET_NUM_CONCURRENT_RANGE_GETS'] = '1'
+                previous_hub_timeout = getattr(
+                    _hf_constants, 'HF_HUB_DOWNLOAD_TIMEOUT', None
+                )
+                if previous_hub_timeout is not None:
+                    _hf_constants.HF_HUB_DOWNLOAD_TIMEOUT = min(
+                        int(previous_hub_timeout),
+                        _stage06_xet_timeout_seconds,
+                    )
                 try:
-                    return _stage06_http_hub_download(**retry)
+                    for xet_attempt in range(1, 3):
+                        try:
+                            with _stage06_xet_deadline(
+                                _stage06_xet_timeout_seconds
+                            ):
+                                return _stage06_http_hub_download(**retry)
+                        except _Stage06XetTimeout as timeout_error:
+                            if xet_attempt == 2:
+                                raise RuntimeError(
+                                    'STAGE06_ARTIFACT_XET_TIMEOUT: the private '
+                                    'artifact transfer made no progress within '
+                                    f'{_stage06_xet_timeout_seconds} seconds '
+                                    'per attempt; partial cache is resumable. '
+                                    'Rerun this same notebook when Kaggle/HF '
+                                    'network service is healthy.'
+                                ) from timeout_error
+                            print(
+                                'STAGE06_ARTIFACT_XET_RETRY',
+                                {
+                                    'attempt': xet_attempt + 1,
+                                    'wait_seconds': 5,
+                                    'reason': 'bounded-transfer-timeout',
+                                },
+                                flush=True,
+                            )
+                            _time.sleep(5)
                 finally:
+                    if previous_hub_timeout is not None:
+                        _hf_constants.HF_HUB_DOWNLOAD_TIMEOUT = previous_hub_timeout
+                    if previous_xet_concurrency is None:
+                        os.environ.pop('HF_XET_NUM_CONCURRENT_RANGE_GETS', None)
+                    else:
+                        os.environ['HF_XET_NUM_CONCURRENT_RANGE_GETS'] = (
+                            previous_xet_concurrency
+                        )
                     _hf_constants.HF_HUB_DISABLE_XET = previous_disable_xet
                     if previous_disable_xet_env is None:
                         os.environ.pop('HF_HUB_DISABLE_XET', None)
