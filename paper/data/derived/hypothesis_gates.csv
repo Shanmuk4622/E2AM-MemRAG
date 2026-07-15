@@ -1,0 +1,7 @@
+gate,passed
+quality_noninferiority,True
+energy_reduction,False
+operating_constraints,True
+confirmatory_hypothesis,False
+experiment_completion,True
+fresh_restore,True

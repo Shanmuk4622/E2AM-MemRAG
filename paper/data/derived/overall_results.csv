@@ -1,0 +1,2 @@
+policy_queries,policy_success_rate,policy_success_ci_low,policy_success_ci_high,policy_mean_gpu_joules,policy_gpu_joules_ci_low,policy_gpu_joules_ci_high,policy_latency_seconds,policy_abstention_rate,execution_coverage,baseline_route_id,baseline_success_rate,baseline_mean_gpu_joules,success_difference,gpu_joules_difference,hypothesis_pass
+120,0.0,0.0,0.0,143.1556540192412,138.13576858584764,148.06820476019024,3.7601317638916414,0.15,1.0,A03_tiny_hybrid,0.0,143.1556540192412,0.0,0.0,False

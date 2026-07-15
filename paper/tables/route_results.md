@@ -1,0 +1,19 @@
+| Route | Strict success | GPU J/query | Median s |
+| --- | --- | --- | --- |
+| M18_granite_grounded_verified | 44.2% | 176.68 | 2.65 |
+| A14_upper_hybrid_verified | 42.5% | 256.13 | 3.79 |
+| M20_peer_grounded_verified | 34.2% | 148.93 | 2.34 |
+| M19_peer_direct | 23.3% | 107.42 | 1.67 |
+| M17_granite_direct | 20.8% | 57.14 | 0.45 |
+| M21_upper_direct | 13.3% | 84.42 | 1.25 |
+| A00_tiny_direct | 12.5% | 54.71 | 1.44 |
+| A03_tiny_hybrid | 0.0% | 143.16 | 3.47 |
+| A08_tiny_memory_flat | 0.0% | 148.96 | 3.42 |
+| A02_tiny_dense | 0.0% | 150.41 | 3.47 |
+| A01_tiny_bm25 | 0.0% | 157.68 | 3.41 |
+| A09_tiny_memory_hier | 0.0% | 170.32 | 3.39 |
+| A10_tiny_memory_graph | 0.0% | 171.49 | 3.37 |
+| M16_tiny_grounded_verified | 0.0% | 201.44 | 3.66 |
+| A04_small_direct | 0.0% | 256.98 | 4.12 |
+| A12_small_hybrid_both | 0.0% | 258.54 | 4.02 |
+| A13_small_hybrid_verified | 0.0% | 260.85 | 4.03 |

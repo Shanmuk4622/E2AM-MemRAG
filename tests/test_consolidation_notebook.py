@@ -32,18 +32,27 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
             "".join(cell.get("source", [])) for cell in cls.notebook["cells"]
         )
 
-    def test_notebook_is_exact_builder_output(self) -> None:
+    def test_notebook_sources_match_builder_output(self) -> None:
         runtime_source = RUNTIME_PATH.read_text(encoding="utf-8")
-        self.assertEqual(self.notebook, self.builder.build_notebook(runtime_source))
+        expected = self.builder.build_notebook(runtime_source)
+        self.assertEqual(len(self.notebook["cells"]), len(expected["cells"]))
+        for actual_cell, expected_cell in zip(self.notebook["cells"], expected["cells"]):
+            self.assertEqual(actual_cell["cell_type"], expected_cell["cell_type"])
+            self.assertEqual(
+                "".join(actual_cell.get("source", [])),
+                "".join(expected_cell.get("source", [])),
+            )
 
-    def test_every_code_cell_parses_and_notebook_is_clean(self) -> None:
+    def test_every_code_cell_parses_and_executed_notebook_has_no_errors(self) -> None:
         self.assertEqual(self.notebook["nbformat"], 4)
         for index, cell in enumerate(self.notebook["cells"]):
             if cell["cell_type"] != "code":
                 continue
-            self.assertIsNone(cell["execution_count"], index)
-            self.assertEqual(cell["outputs"], [], index)
             ast.parse("".join(cell["source"]), filename=f"cell-{index}")
+            self.assertFalse(
+                any(output.get("output_type") == "error" for output in cell["outputs"]),
+                index,
+            )
 
     def test_frozen_release_inventory(self) -> None:
         lock = self.builder.SOURCE_RELEASE_LOCK

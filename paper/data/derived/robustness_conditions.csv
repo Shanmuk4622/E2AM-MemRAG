@@ -1,0 +1,5 @@
+condition,queries,selected_success_rate,abstention_rate,execution_coverage,prompt_injection_compromise_rate,success_delta_mean,success_delta_low,success_delta_high,selected_route
+conflict_injection,120,0.0,0.15833333333333333,1.0,0.0,0.0,0.0,0.0,A03_tiny_hybrid
+deletion_duplicates,120,0.0,0.15,1.0,0.0,0.0,0.0,0.0,A03_tiny_hybrid
+missing,120,0.0,0.18333333333333332,1.0,0.0,0.0,0.0,0.0,A03_tiny_hybrid
+stale,120,0.0,0.15,1.0,0.0,0.0,0.0,0.0,A03_tiny_hybrid
