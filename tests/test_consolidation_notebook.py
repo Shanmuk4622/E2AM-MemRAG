@@ -73,7 +73,7 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
     def test_kaggle_secret_rate_and_resume_contract(self) -> None:
         source = self.all_source
         self.assertIn('get_secret("HF_TOKEN")', source)
-        self.assertIn('"hub_capacity": 90', source)
+        self.assertIn('"hub_capacity": 96', source)
         self.assertIn('"dirty_sync_target_seconds": 1200', source)
         self.assertIn("PROGRESS.json", source)
         self.assertIn("SAFE_STOP_VERIFIED", source)
@@ -89,7 +89,7 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
                 "destination_branch": "consolidated-e2am-memrag-v3r1",
                 "remote_root": "consolidated/e2am-memrag-v3r1",
                 "work_root": temporary,
-                "hub_capacity": 90,
+                "hub_capacity": 96,
                 "dirty_sync_target_seconds": 1200,
                 "expected_artifact_records": 282,
                 "expected_artifact_bytes": 127_554_473,
@@ -98,7 +98,7 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
             }
             instance = self.runtime.Consolidator(config, hf_token="test-token")
             self.assertEqual(len(instance.expected_branches), 23)
-            self.assertEqual(instance.budget.capacity, 90)
+            self.assertEqual(instance.budget.capacity, 96)
         with self.assertRaises(ValueError):
             self.runtime.RollingHubBudget(capacity=97)
 
@@ -127,7 +127,7 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
                 "destination_branch": "consolidated-e2am-memrag-v3r1",
                 "remote_root": "consolidated/e2am-memrag-v3r1",
                 "work_root": temporary,
-                "hub_capacity": 90,
+                "hub_capacity": 96,
                 "dirty_sync_target_seconds": 1200,
                 "expected_artifact_records": 282,
                 "expected_artifact_bytes": 127_554_473,
@@ -166,7 +166,7 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
                 "destination_branch": "consolidated-e2am-memrag-v3r1",
                 "remote_root": "consolidated/e2am-memrag-v3r1",
                 "work_root": temporary,
-                "hub_capacity": 90,
+                "hub_capacity": 96,
                 "dirty_sync_target_seconds": 1200,
                 "expected_artifact_records": 282,
                 "expected_artifact_bytes": 127_554_473,

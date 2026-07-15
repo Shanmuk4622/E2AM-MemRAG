@@ -72,7 +72,7 @@ branch.
 4. Run all cells. Use only one live copy of this consolidation notebook at a time.
 5. Expect roughly **8–12 hours**: all 282 artifacts are downloaded from immutable
    commits, checksummed, archived, uploaded, and downloaded again for verification
-   under a conservative 90/128 weighted-operations-per-hour ceiling.
+   under a conservative 96/128 weighted-operations-per-hour ceiling.
 6. If Kaggle stops, open a fresh session and run all cells again. The notebook reads
    remote `PROGRESS.json`, verifies completed archives, and resumes at the next branch.
 7. A clean or interrupted download creates no unique scientific state. Dirty state
@@ -185,7 +185,7 @@ CONFIG = {{
     "destination_branch": "consolidated-e2am-memrag-v3r1",
     "remote_root": "consolidated/e2am-memrag-v3r1",
     "work_root": str(WORK_ROOT),
-    "hub_capacity": 90,
+    "hub_capacity": 96,
     "dirty_sync_target_seconds": 1200,
     "expected_artifact_records": 282,
     "expected_artifact_bytes": 127_554_473,

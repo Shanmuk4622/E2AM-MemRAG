@@ -165,7 +165,7 @@ def extract_verified_zip(archive_path: Path, destination: Path) -> None:
 
 
 class RollingHubBudget:
-    """A visible rolling limiter with 90/128 weighted operations per hour."""
+    """A visible rolling limiter with 96/128 weighted operations per hour."""
 
     def __init__(
         self,
@@ -191,7 +191,12 @@ class RollingHubBudget:
             if len(values) != 2:
                 continue
             timestamp, weight = float(values[0]), int(values[1])
-            if 0 < weight <= self.capacity and now - timestamp < self.window_seconds:
+            # Older notebook versions persisted speculative reservations (16/42/70).
+            # They were not Hub calls and must not block an immediate resume.
+            if (
+                0 < weight <= min(self.capacity, 4)
+                and now - timestamp < self.window_seconds
+            ):
                 restored.append((timestamp, weight))
         self.events = deque(sorted(restored))
         self._prune()
@@ -290,7 +295,7 @@ class Consolidator:
         if len(self.expected_branches) != len(self.source_lock):
             raise RuntimeError("Source release lock repeats a branch")
         self._validate_source_lock()
-        self.budget = RollingHubBudget(capacity=int(self.config.get("hub_capacity", 90)))
+        self.budget = RollingHubBudget(capacity=int(self.config.get("hub_capacity", 96)))
         self.api = None
         self.hf_hub_download = None
         self.CommitOperationAdd = None
@@ -532,19 +537,8 @@ class Consolidator:
             "updated_at": now,
             "completed": {},
             "excluded_legacy_branches": legacy_branches,
-            # Reserve the initialization commit and its remote verification so an
-            # immediate fresh-session resume cannot undercount recent Hub traffic.
-            "hub_budget_events": self._budget_snapshot_with_reservations(16),
+            "hub_budget_events": self.budget.snapshot(),
         }
-
-    def _budget_snapshot_with_reservations(self, *weights: int) -> list[list[float | int]]:
-        events = self.budget.snapshot()
-        timestamp = time.time()
-        for weight in weights:
-            if not 0 < int(weight) <= self.budget.capacity:
-                raise ValueError("Invalid persisted Hub-budget reservation")
-            events.append([timestamp, int(weight)])
-        return events
 
     def _validate_progress(self, progress: Mapping[str, Any]) -> dict[str, Any]:
         value = dict(progress)
@@ -949,10 +943,7 @@ class Consolidator:
         candidate_progress = json.loads(canonical_json(self.progress))
         candidate_progress["completed"][branch] = entry
         candidate_progress["updated_at"] = utc_now()
-        # Covers repo-head, missing-file probe, commit, and three fresh downloads.
-        candidate_progress["hub_budget_events"] = (
-            self._budget_snapshot_with_reservations(16)
-        )
+        candidate_progress["hub_budget_events"] = self.budget.snapshot()
         progress_bytes = canonical_json(candidate_progress)
         progress_local = self._local_file("PROGRESS.json", progress_bytes)
         self.destination_head = self._commit_verified(
@@ -1149,12 +1140,7 @@ branches remain untouched.
         if candidate_progress["status"] != "COMPLETE":
             candidate_progress["status"] = "COMPLETE"
             candidate_progress["updated_at"] = utc_now()
-            # The two reservations cover destination finalization and the following
-            # main publication/verification. They are persisted for crash recovery;
-            # the active session continues to account actual calls normally.
-            candidate_progress["hub_budget_events"] = (
-                self._budget_snapshot_with_reservations(42, 70)
-            )
+            candidate_progress["hub_budget_events"] = self.budget.snapshot()
         progress_bytes = canonical_json(candidate_progress)
         progress_local = self._local_file("PROGRESS.json", progress_bytes)
         files: dict[str, Path] = {
