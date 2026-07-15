@@ -83,6 +83,21 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
         self.assertNotIn("False if public_read else self.hf_token", source)
         self.assertNotIn("huggingface-hub==0.36.2", source)
 
+    def test_notebook_defaults_to_bounded_fast_paper_release(self) -> None:
+        source = self.all_source
+        self.assertIn(
+            "FINAL_REPORT = run_fast_paper_release(CONFIG, hf_token=HF_TOKEN)",
+            source,
+        )
+        self.assertNotIn(
+            "FINAL_REPORT = run_consolidation(CONFIG, hf_token=HF_TOKEN)",
+            source,
+        )
+        self.assertIn("FAST_PAPER_RELEASE_COMPLETE", source)
+        self.assertIn('"paper_artifact_records"] == 11', source)
+        self.assertIn('"paper_artifact_bytes"] == 11_528_142', source)
+        self.assertIn("full_archive_progress_preserved", source)
+
     def test_release_lock_constructs_and_capacity_guard_is_strict(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             config = {

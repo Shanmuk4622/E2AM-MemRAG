@@ -52,6 +52,38 @@ def code(source: str) -> dict:
     }
 
 
+FAST_RUNBOOK = """# 10 - Fast publish of the verified paper release
+
+This CPU-only Kaggle notebook publishes every paper-facing Stage-09 result from
+the completed e2am-memrag-v3r1 experiment. It does not rerun experiments and
+never deletes, renames, rewrites, merges, or force-pushes a source branch.
+
+## Numbered runbook
+
+1. Use a fresh Kaggle notebook with Accelerator: None and Internet on.
+2. Add HF_TOKEN with write access to Shanmuk4622/E2AM-MemRAG-Traces.
+3. Stop the older long-running consolidation notebook.
+4. Run all cells in this notebook.
+5. The fast path verifies the 11 final Stage-09 artifacts (about 11.5 MB) and
+   publishes them in two bundled commits. It is designed to finish within one
+   hour and normally takes only several minutes.
+6. If interrupted, rerun all cells. Identical files are reused and conflicts
+   safe-stop instead of being overwritten.
+7. Completion requires FAST_PAPER_RELEASE_COMPLETE followed by FINAL_GO.
+
+## Output layout
+
+- All 23 original v3r1 stage branches remain unchanged.
+- Existing slow archival progress remains untouched and is optional.
+- Verified paper branch: paper-release-e2am-memrag-v3r1.
+- Visible paper data on main: experiments/e2am-memrag-v3r1/paper/.
+- The frozen RELEASE.json is never overwritten.
+
+Experiment completion and hypothesis success remain separate. The experiment
+completed successfully; the predeclared confirmatory hypothesis did not pass.
+"""
+
+
 def build_notebook(runtime_source: str) -> dict:
     lock_literal = pformat(SOURCE_RELEASE_LOCK, width=120, sort_dicts=False)
     cells = [
@@ -184,6 +216,7 @@ CONFIG = {{
     "repo_id": "Shanmuk4622/E2AM-MemRAG-Traces",
     "experiment_id": "e2am-memrag-v3r1",
     "destination_branch": "consolidated-e2am-memrag-v3r1",
+    "paper_destination_branch": "paper-release-e2am-memrag-v3r1",
     "remote_root": "consolidated/e2am-memrag-v3r1",
     "work_root": str(WORK_ROOT),
     "hub_capacity": 96,
@@ -214,30 +247,31 @@ if disk.free < 1_000_000_000:
         "STORAGE_SAFE_STOP: less than 1 GB is free under /kaggle/working. "
         "Start a fresh CPU session; no remote branch was changed."
     )
-print("CONSOLIDATION_PREFLIGHT_GO", {
+print("FAST_PAPER_PREFLIGHT_GO", {
     "free_gib": round(disk.free / (1024 ** 3), 2),
-    "source_branches": 23,
-    "expected_mib": round(127_554_473 / (1024 ** 2), 3),
+    "source_branches_preserved": 23,
+    "paper_artifacts": 11,
+    "paper_mib": round(11_528_142 / (1024 ** 2), 3),
     "gpu_required": False,
 })
 """),
-        code("""# Run or resume. A second writer, mixed release, checksum mismatch, or
-# conflicting main file causes a safe stop instead of an overwrite.
-FINAL_REPORT = run_consolidation(CONFIG, hf_token=HF_TOKEN)
+        code("""# Fast paper publication. Existing full-archive progress is preserved.
+FINAL_REPORT = run_fast_paper_release(CONFIG, hf_token=HF_TOKEN)
 """),
         code("""# Final publication gate.
 assert FINAL_REPORT["go"] is True
 assert FINAL_REPORT["remote_verified"] is True
 assert FINAL_REPORT["main_visible"] is True
-assert FINAL_REPORT["source_branch_count"] == 23
-assert FINAL_REPORT["source_artifact_records"] == 282
-assert FINAL_REPORT["source_artifact_bytes"] == 127_554_473
+assert FINAL_REPORT["scope"] == "stage09-paper-release"
+assert FINAL_REPORT["paper_artifact_records"] == 11
+assert FINAL_REPORT["paper_artifact_bytes"] == 11_528_142
 assert FINAL_REPORT["source_branches_modified"] is False
 assert FINAL_REPORT["completion_is_independent_of_hypothesis"] is True
+assert FINAL_REPORT["full_archive_progress_preserved"] is True
 
 print("FINAL_GO", {
-    "consolidation_branch": FINAL_REPORT["consolidation_branch"],
-    "consolidation_commit": FINAL_REPORT["consolidation_commit_sha"],
+    "paper_branch": FINAL_REPORT["paper_branch"],
+    "paper_commit": FINAL_REPORT["paper_commit_sha"],
     "main_commit": FINAL_REPORT["main_commit_sha"],
     "paper_url": "https://huggingface.co/datasets/Shanmuk4622/E2AM-MemRAG-Traces/tree/main/experiments/e2am-memrag-v3r1/paper",
     "hypothesis_pass": FINAL_REPORT["hypothesis_pass"],
@@ -245,6 +279,7 @@ print("FINAL_GO", {
 })
 """),
     ]
+    cells[0] = markdown(FAST_RUNBOOK)
     return {
         "cells": cells,
         "metadata": {

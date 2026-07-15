@@ -1249,6 +1249,260 @@ branches remain untouched.
                 raise RuntimeError(f"Main publication verification failed: {remote_path}")
         return main_head
 
+    def _publish_add_only(
+        self,
+        *,
+        revision: str,
+        parent_commit: str,
+        files: Mapping[str, Path],
+        message: str,
+    ) -> str:
+        """Publish missing files, accept byte-identical reruns, reject conflicts."""
+
+        existing_files = set(
+            self._call(
+                lambda: self.api.list_repo_files(
+                    repo_id=self.repo_id,
+                    repo_type=self.repo_type,
+                    revision=parent_commit,
+                ),
+                weight=1,
+                reason=f"inspect-before-add-only:{revision}",
+            )
+        )
+        missing: dict[str, Path] = {}
+        for remote_path, local_path in files.items():
+            if remote_path not in existing_files:
+                missing[remote_path] = local_path
+                continue
+            remote = self._download(filename=remote_path, revision=parent_commit)
+            if remote != local_path.read_bytes():
+                raise RuntimeError(
+                    "ADD_ONLY_CONFLICT: existing file differs and will not be "
+                    f"overwritten: {revision}:{remote_path}"
+                )
+        head = parent_commit
+        if missing:
+            head = self._commit_verified(
+                revision=revision,
+                parent_commit=parent_commit,
+                files=missing,
+                message=message,
+            )
+        # Existing files were byte-verified above; newly added files were freshly
+        # downloaded and verified by _commit_verified. A second identical pass
+        # would only burn Hub quota without adding evidence.
+        return head
+
+    def _fast_stage09_files(
+        self,
+        restored: Path,
+        records: list[dict[str, Any]],
+    ) -> dict[str, Path]:
+        expected = [
+            "HYPOTHESIS_RESULT.json",
+            "RELEASE_CANDIDATE.json",
+            "_SUCCESS.json",
+            "release/clean_traces.jsonl",
+            "release/experiment_summary.json",
+            "release/mechanism_analysis.json",
+            "release/model_transfer_panel.json",
+            "release/robustness_analysis.json",
+            "release/robustness_traces.jsonl",
+            "release/route_cards.json",
+            "release_manifest.json",
+        ]
+        inventory = {record["logical_path"]: record for record in records}
+        if set(inventory) != set(expected):
+            missing = sorted(set(expected) - set(inventory))
+            extra = sorted(set(inventory) - set(expected))
+            raise RuntimeError(
+                f"FAST_PAPER_SCOPE_MISMATCH: missing={missing}, extra={extra}"
+            )
+        result: dict[str, Path] = {}
+        for logical in expected:
+            path = safe_target(restored, logical)
+            record = inventory[logical]
+            if (
+                not path.is_file()
+                or path.stat().st_size != record["bytes"]
+                or sha256_file(path) != record["sha256"]
+            ):
+                raise RuntimeError(f"FAST_PAPER_ARTIFACT_INVALID: {logical}")
+            result[logical] = path
+        return result
+
+    def run_fast_paper_release(self) -> dict[str, Any]:
+        """Publish the complete Stage-09 paper release without archiving intermediates."""
+
+        self._load_hub()
+        branches, legacy = self._list_refs()
+        release = self._verify_release_pointer()
+        stage09 = next(
+            (
+                lock
+                for lock in self.source_lock
+                if lock["stage_id"] == "09" and lock["owner"] == "coordinator"
+            ),
+            None,
+        )
+        if stage09 is None:
+            raise RuntimeError("Frozen Stage-09 coordinator lock is missing")
+
+        print(
+            "FAST_PAPER_RELEASE_START",
+            {
+                "source_branch": stage09["branch"],
+                "source_commit": stage09["commit_sha"],
+                "artifacts": stage09["artifact_records"],
+                "mib": round(stage09["artifact_bytes"] / (1024**2), 3),
+                "full_archive_progress_preserved": True,
+            },
+            flush=True,
+        )
+        restored, records = self._restore_source(stage09)
+        paper_files = self._fast_stage09_files(restored, records)
+        success_gate = json.loads(paper_files["_SUCCESS.json"].read_bytes())
+        if success_gate.get("status") != "PASS":
+            raise RuntimeError("Stage-09 completion gate is not PASS")
+        hypothesis = json.loads(
+            paper_files["HYPOTHESIS_RESULT.json"].read_bytes()
+        )
+        hypothesis_pass = bool(hypothesis.get("hypothesis_pass", False))
+
+        fast_manifest = {
+            "schema_version": 1,
+            "scope": "stage09-paper-release",
+            "experiment_id": self.experiment_id,
+            "source_release_pointer": dict(release),
+            "source_branch": stage09["branch"],
+            "source_commit_sha": stage09["commit_sha"],
+            "source_manifest_sha256": stage09["manifest_sha256"],
+            "artifact_records": stage09["artifact_records"],
+            "artifact_bytes": stage09["artifact_bytes"],
+            "artifacts": [
+                {
+                    "logical_path": record["logical_path"],
+                    "sha256": record["sha256"],
+                    "bytes": record["bytes"],
+                }
+                for record in records
+            ],
+            "hypothesis_pass": hypothesis_pass,
+            "completion_is_independent_of_hypothesis": True,
+            "full_intermediate_archive_required_for_paper": False,
+            "full_archive_progress_preserved": True,
+            "source_branches_modified": False,
+            "excluded_legacy_branches": legacy,
+        }
+        manifest_bytes = canonical_json(fast_manifest)
+        fast_success = {
+            "schema_version": 1,
+            "status": "COMPLETE",
+            "scope": "stage09-paper-release",
+            "experiment_id": self.experiment_id,
+            "artifact_records": stage09["artifact_records"],
+            "artifact_bytes": stage09["artifact_bytes"],
+            "manifest_sha256": sha256_bytes(manifest_bytes),
+            "hypothesis_pass": hypothesis_pass,
+            "source_branches_modified": False,
+        }
+        fast_success_bytes = canonical_json(fast_success)
+        manifest_local = self._local_file("FAST_PAPER_MANIFEST.json", manifest_bytes)
+        success_local = self._local_file(
+            "FAST_PAPER_SUCCESS.json", fast_success_bytes
+        )
+        readme_local = self._local_file(
+            "FAST_PAPER_README.md",
+            self._paper_readme(hypothesis_pass).encode("utf-8"),
+        )
+
+        paper_branch = str(
+            self.config.get(
+                "paper_destination_branch",
+                f"paper-release-{self.experiment_id}",
+            )
+        )
+        if paper_branch not in branches:
+            self._call(
+                lambda: self.api.create_branch(
+                    repo_id=self.repo_id,
+                    repo_type=self.repo_type,
+                    branch=paper_branch,
+                    revision=branches["main"],
+                    exist_ok=True,
+                ),
+                weight=2,
+                reason="create-fast-paper-branch",
+            )
+        paper_head = self._repo_head(paper_branch)
+        branch_files: dict[str, Path] = {
+            "FAST_PAPER_MANIFEST.json": manifest_local,
+            "_SUCCESS.json": success_local,
+            "FAST_PAPER_README.md": readme_local,
+        }
+        for logical, path in paper_files.items():
+            branch_files[f"paper/{logical}"] = path
+        paper_head = self._publish_add_only(
+            revision=paper_branch,
+            parent_commit=paper_head,
+            files=branch_files,
+            message=f"Publish verified {self.experiment_id} Stage-09 paper release",
+        )
+
+        base = f"experiments/{self.experiment_id}"
+        pointer = {
+            "schema_version": 1,
+            "scope": "stage09-paper-release",
+            "experiment_id": self.experiment_id,
+            "paper_branch": paper_branch,
+            "paper_commit_sha": paper_head,
+            "paper_prefix": f"{base}/paper",
+            "manifest_sha256": sha256_bytes(manifest_bytes),
+            "success_sha256": sha256_bytes(fast_success_bytes),
+            "artifact_records": stage09["artifact_records"],
+            "artifact_bytes": stage09["artifact_bytes"],
+            "full_archive_progress_preserved": True,
+            "source_branches_modified": False,
+        }
+        pointer_local = self._local_file(
+            "FAST_PAPER_RELEASE.json", canonical_json(pointer)
+        )
+        main_head = self._repo_head("main")
+        main_files: dict[str, Path] = {
+            f"{base}/FAST_PAPER_RELEASE.json": pointer_local,
+            f"{base}/FAST_PAPER_MANIFEST.json": manifest_local,
+            f"{base}/PAPER_RELEASE_README.md": readme_local,
+        }
+        for logical, path in paper_files.items():
+            main_files[f"{base}/paper/{logical}"] = path
+        if f"{base}/RELEASE.json" in main_files:
+            raise RuntimeError("Frozen RELEASE.json must never be overwritten")
+        main_head = self._publish_add_only(
+            revision="main",
+            parent_commit=main_head,
+            files=main_files,
+            message=f"Publish visible {self.experiment_id} paper results",
+        )
+        report = {
+            "go": True,
+            "scope": "stage09-paper-release",
+            "experiment_id": self.experiment_id,
+            "paper_artifact_records": stage09["artifact_records"],
+            "paper_artifact_bytes": stage09["artifact_bytes"],
+            "paper_branch": paper_branch,
+            "paper_commit_sha": paper_head,
+            "main_commit_sha": main_head,
+            "hypothesis_pass": hypothesis_pass,
+            "completion_is_independent_of_hypothesis": True,
+            "full_archive_progress_preserved": True,
+            "source_branches_modified": False,
+            "remote_verified": True,
+            "main_visible": True,
+        }
+        print("FAST_PAPER_RELEASE_COMPLETE", report, flush=True)
+        return report
+
     def _safe_stop(self) -> bool:
         if (
             self.destination_head is None
@@ -1310,3 +1564,11 @@ def run_consolidation(config: Mapping[str, Any], *, hf_token: str) -> dict[str, 
     """Run or resume the exact locked v3r1 consolidation."""
 
     return Consolidator(config, hf_token=hf_token).run()
+
+
+def run_fast_paper_release(
+    config: Mapping[str, Any], *, hf_token: str
+) -> dict[str, Any]:
+    """Publish all paper-facing Stage-09 results in a bounded fast path."""
+
+    return Consolidator(config, hf_token=hf_token).run_fast_paper_release()
