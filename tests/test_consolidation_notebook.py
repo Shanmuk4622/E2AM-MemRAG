@@ -79,6 +79,8 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
         self.assertIn("SAFE_STOP_VERIFIED", source)
         self.assertIn("SECOND_WRITER_STOP", source)
         self.assertIn("HF_HUB_DISABLE_XET", source)
+        self.assertIn("token: str | bool = self.hf_token", source)
+        self.assertNotIn("False if public_read else self.hf_token", source)
         self.assertNotIn("huggingface-hub==0.36.2", source)
 
     def test_release_lock_constructs_and_capacity_guard_is_strict(self) -> None:
@@ -101,6 +103,11 @@ class ConsolidationNotebookContractTest(unittest.TestCase):
             self.assertEqual(instance.budget.capacity, 96)
         with self.assertRaises(ValueError):
             self.runtime.RollingHubBudget(capacity=97)
+
+    def test_old_budget_events_are_normalized_on_resume(self) -> None:
+        budget = self.runtime.RollingHubBudget(capacity=96, clock=lambda: 1000.0)
+        budget.restore([[999.0, 2], [999.0, 16], [999.0, 4]])
+        self.assertEqual(budget.used, 5)
 
     def test_deterministic_archive_and_safe_restore(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

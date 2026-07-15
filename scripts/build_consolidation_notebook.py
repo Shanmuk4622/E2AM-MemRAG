@@ -72,7 +72,8 @@ branch.
 4. Run all cells. Use only one live copy of this consolidation notebook at a time.
 5. Expect roughly **8–12 hours**: all 282 artifacts are downloaded from immutable
    commits, checksummed, archived, uploaded, and downloaded again for verification
-   under a conservative 96/128 weighted-operations-per-hour ceiling.
+   under a conservative 96/128 weighted-operations-per-hour ceiling. All Hub reads
+   are authenticated with HF_TOKEN to avoid the low unauthenticated rate limit.
 6. If Kaggle stops, open a fresh session and run all cells again. The notebook reads
    remote `PROGRESS.json`, verifies completed archives, and resumes at the next branch.
 7. A clean or interrupted download creates no unique scientific state. Dirty state

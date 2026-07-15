@@ -191,13 +191,15 @@ class RollingHubBudget:
             if len(values) != 2:
                 continue
             timestamp, weight = float(values[0]), int(values[1])
-            # Older notebook versions persisted speculative reservations (16/42/70).
-            # They were not Hub calls and must not block an immediate resume.
+            # Older notebook versions charged downloads as weight 2. Normalize
+            # those real calls to the current one-call/one-unit accounting. Also
+            # discard the old speculative reservations (16/42/70).
+            normalized_weight = 1 if weight == 2 else weight
             if (
-                0 < weight <= min(self.capacity, 4)
+                0 < normalized_weight <= min(self.capacity, 4)
                 and now - timestamp < self.window_seconds
             ):
-                restored.append((timestamp, weight))
+                restored.append((timestamp, normalized_weight))
         self.events = deque(sorted(restored))
         self._prune()
 
@@ -393,7 +395,9 @@ class Consolidator:
         public_read: bool = True,
     ) -> bytes:
         safe_relative_path(filename)
-        token: str | bool = False if public_read else self.hf_token
+        # Authenticate public reads too; anonymous Hub traffic has a lower rate
+        # limit and caused the warning shown in the Kaggle log.
+        token: str | bool = self.hf_token
 
         def perform(force_download: bool = False) -> str:
             return self.hf_hub_download(
@@ -409,7 +413,7 @@ class Consolidator:
         try:
             local = self._call(
                 perform,
-                weight=2,
+                weight=1,
                 reason=f"download:{filename}",
                 public_download=public_read,
             )
@@ -428,7 +432,7 @@ class Consolidator:
             )
             local = self._call(
                 lambda: perform(True),
-                weight=2,
+                weight=1,
                 reason=f"signed-url-refresh:{filename}",
                 public_download=True,
             )
