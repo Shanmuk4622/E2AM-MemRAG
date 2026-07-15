@@ -678,6 +678,18 @@ def _runbook(instance: NotebookInstance) -> str:
         if instance.lane_id
         else "This is a coordinator-only stage; run it exactly once after its prerequisites."
     )
+    prerequisite_step = (
+        (
+            "3. Choose **Run All**. This notebook first verifies the exact Stage-07 lane-02",
+            "   worker closure. If it is absent or only half-created, the notebook resumes",
+            "   that frozen lane, remotely verifies its gate, releases dead GPU cache, and",
+            "   then starts Stage-08 automatically. Do not run a different lane as a substitute.",
+        )
+        if instance.spec.stage_id == "08" and instance.lane_id == "lane-02"
+        else (
+            "3. Confirm every prerequisite gate below exists, then choose **Run All**.",
+        )
+    )
     return "\n".join(
         (
             "## Numbered Kaggle runbook",
@@ -686,7 +698,7 @@ def _runbook(instance: NotebookInstance) -> str:
             "   A dual-T4 session is acceptable; the first code cell exposes only GPU 0.",
             "2. Add a Kaggle Secret named `HF_TOKEN` with write access to",
             f"   `{DEFAULT_HF_REPO_ID}`. Never paste the token into a cell.",
-            "3. Confirm every prerequisite gate below exists, then choose **Run All**.",
+            *prerequisite_step,
             f"   {lane_instruction}",
             "4. Leave the notebook running until it prints `STAGE_COMPLETE` and",
             "   `REMOTE_CLOSURE_VERIFIED`. Dirty state is bundled every 20 minutes and after",
@@ -1176,6 +1188,174 @@ def _prepare_code(instance: NotebookInstance) -> str:
     }})
     """
     patches = []
+    if spec.stage_id == "08" and instance.lane_id == "lane-02":
+        stage07_spec = next(stage for stage in STAGES if stage.stage_id == "07")
+        prerequisite_repair = f"""
+        # Lane-02 recovery amendment: an earlier local file was overwritten with
+        # Stage-05 content, so the exact Stage-07 lane-02 worker branch may be
+        # absent even when the surrounding lanes are complete. Verify the fixed
+        # branch and its worker pointer first. If and only if that resumable
+        # closure is missing, execute the same frozen
+        # Stage-07 lane-02 partition and seal its normal remote gate before Stage-08.
+        # No alternate lane, mutable main revision, or unverified artifact is accepted.
+        from e2am_memrag.experiment_pipeline import (
+            _make_store as _stage08_make_store,
+            _remote_exists as _stage08_remote_exists,
+        )
+
+        _STAGE07_REPAIR_BRANCH = (
+            'stage-e2am-memrag-v3r1-07-stage-07-lane-02'
+        )
+
+        def _stage07_lane02_closure_exists():
+            probe_store = _stage08_make_store(
+                root=(
+                    Path(WORK_ROOT)
+                    / EXPERIMENT_ID
+                    / '08'
+                    / 'lane-02'
+                    / '.stage07-prerequisite-probe'
+                ),
+                repo_id=HF_REPO_ID,
+                repo_type=HF_REPO_TYPE,
+                experiment_id=EXPERIMENT_ID,
+                stage_id='07',
+                owner='lane-02',
+                token=HF_TOKEN,
+                sync_interval_seconds=SYNC_INTERVAL_SECONDS,
+            )
+            # _remote_exists verifies both the branch head and its worker-specific
+            # pointer. A branch left half-created by an interrupted first upload is
+            # therefore repaired instead of being mistaken for a complete closure.
+            return _stage08_remote_exists(probe_store, HF_TOKEN)
+
+        if not _stage07_lane02_closure_exists():
+            print(
+                'STAGE08_LANE02_PREREQUISITE_REPAIR_START',
+                {{'missing_branch': _STAGE07_REPAIR_BRANCH}},
+                flush=True,
+            )
+            _stage07_request = StageRequest(
+                experiment_id=EXPERIMENT_ID,
+                stage_id='07',
+                stage_name='evaluate_frozen_clean',
+                role='lane',
+                worker_id='stage-07-lane-02',
+                lane_id='lane-02',
+                lane_count=LANE_COUNT,
+                notebook_name=(
+                    '08_run_robustness_lane_02.ipynb#verified-stage07-repair'
+                ),
+                hf_repo_id=HF_REPO_ID,
+                hf_repo_type=HF_REPO_TYPE,
+                hf_revision=_STAGE07_REPAIR_BRANCH,
+                artifact_prefix=(
+                    'experiments/e2am-memrag-v3r1/stages/07/lane-02'
+                ),
+                required_gates=(
+                    '06/coordinator/ROUTER_CALIBRATION_FREEZE.json',
+                ),
+                output_gate='CLEAN_EVAL_LANE_SEAL.json',
+                sync_interval_seconds=SYNC_INTERVAL_SECONDS,
+                work_root=WORK_ROOT,
+                stage_work_items={stage07_spec.work_items!r},
+            )
+            _stage07_runtime = None
+            try:
+                _stage07_runtime = prepare_stage(
+                    _stage07_request,
+                    hf_token=HF_TOKEN,
+                )
+                _stage07_result = run_stage(_stage07_runtime)
+                if not isinstance(_stage07_result, dict) or 'gate' not in _stage07_result:
+                    raise RuntimeError(
+                        'STAGE08_LANE02_PREREQUISITE_REPAIR_INVALID_RESULT'
+                    )
+                _stage07_final = finalize_stage(
+                    _stage07_runtime,
+                    _stage07_result,
+                )
+            except KeyboardInterrupt:
+                if _stage07_runtime is not None:
+                    _repair_stop = safe_stop_stage(
+                        _stage07_runtime,
+                        reason='stage08-lane02-stage07-repair-interrupt',
+                    )
+                    print(
+                        'STAGE08_LANE02_PREREQUISITE_REPAIR_SAFE_STOP',
+                        {{'remote_verified': bool(_repair_stop.get('remote_verified'))}},
+                        flush=True,
+                    )
+                raise
+            except BaseException:
+                if _stage07_runtime is not None:
+                    try:
+                        _repair_stop = safe_stop_stage(
+                            _stage07_runtime,
+                            reason='stage08-lane02-stage07-repair-exception',
+                        )
+                        print(
+                            'STAGE08_LANE02_PREREQUISITE_REPAIR_SAFE_STOP',
+                            {{
+                                'remote_verified': bool(
+                                    _repair_stop.get('remote_verified')
+                                )
+                            }},
+                            flush=True,
+                        )
+                    except Exception as stop_error:
+                        print(
+                            'STAGE08_LANE02_PREREQUISITE_REPAIR_SAFE_STOP_FAILED',
+                            {{'reason': type(stop_error).__name__}},
+                            flush=True,
+                        )
+                raise
+            if (
+                not _stage07_final.get('remote_verified', False)
+                or _stage07_final.get('output_gate')
+                != 'CLEAN_EVAL_LANE_SEAL.json'
+            ):
+                raise RuntimeError(
+                    'STAGE08_LANE02_PREREQUISITE_REPAIR_UNVERIFIED: Stage-07 '
+                    'lane-02 did not publish a verified clean-evaluation gate.'
+                )
+            if not _stage07_lane02_closure_exists():
+                raise RuntimeError(
+                    'STAGE08_LANE02_PREREQUISITE_REPAIR_BRANCH_MISSING_AFTER_FINALIZE'
+                )
+            print(
+                'STAGE08_LANE02_PREREQUISITE_REPAIR_COMPLETE',
+                {{
+                    'branch': _STAGE07_REPAIR_BRANCH,
+                    'commit_sha': _stage07_final.get('commit_sha'),
+                    'new_units': _stage07_result.get('new_units', 0),
+                    'reused_units': _stage07_result.get('reused_units', 0),
+                }},
+                flush=True,
+            )
+        else:
+            print(
+                'STAGE08_LANE02_PREREQUISITE_ALREADY_PRESENT',
+                {{'branch': _STAGE07_REPAIR_BRANCH}},
+                flush=True,
+            )
+
+        # Stage-07 and Stage-08 can use different model pairs. Drop only dead Python
+        # and CUDA-cache references between them; immutable model files remain in the
+        # shared cache and every Stage-07 artifact remains locally and remotely sealed.
+        import gc as _stage08_repair_gc
+        import torch as _stage08_repair_torch
+
+        _stage08_repair_gc.collect()
+        if _stage08_repair_torch.cuda.is_available():
+            _stage08_repair_torch.cuda.empty_cache()
+
+        print(
+            'STAGE08_LANE02_PREREQUISITE_REPAIR_READY: '
+            'verified-stage07-autocomplete-v1'
+        )
+        """
+        patches.append(_clean_source(prerequisite_repair))
     if spec.stage_id == "03" and instance.lane_id == "lane-03":
         transport_fallback = """
     # Operational lane-03-only fallback. The anonymous public CDN signer returned
@@ -1907,6 +2087,25 @@ def validate_notebook(
     elif lane01_dependency_patch in joined:
         raise ValueError(
             f"{instance.filename}: lane-01 dependency bootstrap leaked to another file"
+        )
+
+    stage08_lane02_repair = "STAGE08_LANE02_PREREQUISITE_REPAIR_READY"
+    if instance.spec.stage_id == "08" and instance.lane_id == "lane-02":
+        required_repair_markers = (
+            stage08_lane02_repair,
+            "STAGE08_LANE02_PREREQUISITE_REPAIR_START",
+            "STAGE08_LANE02_PREREQUISITE_REPAIR_COMPLETE",
+            "STAGE08_LANE02_PREREQUISITE_REPAIR_SAFE_STOP",
+            "stage-e2am-memrag-v3r1-07-stage-07-lane-02",
+            "CLEAN_EVAL_LANE_SEAL.json",
+        )
+        if any(marker not in joined for marker in required_repair_markers):
+            raise ValueError(
+                f"{instance.filename}: Stage-08 lane-02 prerequisite repair is incomplete"
+            )
+    elif stage08_lane02_repair in joined:
+        raise ValueError(
+            f"{instance.filename}: Stage-08 lane-02 prerequisite repair leaked"
         )
 
     stage06_patch = "STAGE06_ROUTER_SELECTION_PATCH_READY"
