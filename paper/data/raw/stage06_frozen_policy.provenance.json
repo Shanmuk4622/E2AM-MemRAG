@@ -1,0 +1,12 @@
+{
+  "artifact_sha256": "fda2bda0a715227162ceead0ff032f2228999f6dc9f4bb22890ec23a4acdab14",
+  "branch": "stage-e2am-memrag-v3r1-06-stage-06-coordinator",
+  "bytes": 2261,
+  "downloaded_for_manuscript_audit": "2026-07-15",
+  "experiment_id": "e2am-memrag-v3r1",
+  "logical_path": "frozen_policy.json",
+  "manifest_sha256": "05b72dda0b43de75df0fc580ff764b3f35cd8ad905afbce949d7c6a9dac3304d",
+  "repo_id": "Shanmuk4622/E2AM-MemRAG-Traces",
+  "repo_type": "dataset",
+  "stage_commit_reported_by_executed_notebook": "1b765103f579e972f90a1fb52f2201cb08c19066"
+}

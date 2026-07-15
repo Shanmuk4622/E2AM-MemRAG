@@ -1,0 +1,37 @@
+{
+  "bibliography_entries": 32,
+  "citations_used": 32,
+  "evidence": {
+    "exact_checks": {
+      "amendment_forbids_claim": true,
+      "best_route_success": true,
+      "granite_effect": true,
+      "policy_energy": true,
+      "policy_success": true,
+      "policy_tau": true,
+      "stage06_hash": true,
+      "test_sealed_at_freeze": true,
+      "tiny_effect": true,
+      "upper_effect": true,
+      "validation_infeasible": true
+    },
+    "forbidden_present": [],
+    "required_statements": {
+      "board_confounding": true,
+      "carbon_excluded": true,
+      "cpu_excluded": true,
+      "generation_window_boundary": true,
+      "granite_compatibility": true,
+      "hypothesis_failed": true,
+      "pre_test_amendment": true,
+      "robustness_floor": true,
+      "validation_infeasibility": true
+    }
+  },
+  "figures": 3,
+  "labels": 30,
+  "references": 12,
+  "status": "PASS",
+  "tables": 9,
+  "tex_files": 24
+}

@@ -1,0 +1,97 @@
+\section{Failure Analysis and Design Implications}
+\label{sec:failure}
+
+\subsection{Route Viability Precedes Router Optimization}
+
+The router failure was not simply a poor choice of $\tau$. Validation success was
+8.75\% at every candidate threshold from 0.60 through 1.00. One deployable family
+had no evidence-task success; the other produced a repeated, unparsable sequence
+under the frozen integration. No calibration method can create a useful operating
+point when every feasible action is weak or operationally incompatible. A practical
+router-development pipeline should therefore impose a precondition: at least two
+deployable actions must demonstrate nontrivial, query-dependent strict success
+before policy fitting begins. If the condition fails, the correct output is an
+infeasible action pool, not a forced router leaderboard entry.
+
+The exact-matrix evaluation also clarifies what happened on test. The policy did
+not prospectively discover that A03 was optimal for every question; it invoked the
+same safe fallback because no predicted action cleared the fail-closed threshold.
+This distinction matters when diagnosing routing systems and when comparing them
+with simple baselines \cite{LiEtAl2026LLMRouterBench}.
+
+\subsection{Grounding Is a Generator--Task Interaction}
+
+The aggregate transfer effects conceal sharp task interactions. Always grounding
+helped the 3B/4B generators on several evidence-requiring classes while removing
+some direct successes on no-retrieval and deleted/missing cases. For the 0.6B model,
+it removed the only successful stratum and failed to unlock any other one. An
+adaptive system therefore needs both a capable grounded route and a reliable
+retrieval-need signal. ``Small model'' is too coarse an explanatory variable;
+prompt compliance, context use, instruction tuning, tokenizer/chat templates, and
+task structure jointly determine whether evidence becomes useful.
+
+This finding also limits the common practice of reporting one RAG-minus-direct
+average. Such an average depends on the task mixture. Under traffic dominated by
+knowledge or temporal questions, the larger grounded endpoints would look more
+favorable; under direct-copy or valid-abstention traffic, always-grounded routes
+would look worse. Deployment claims require either a representative workload or
+stratified reporting.
+
+\subsection{The Interface Is Part of the System}
+
+Strict success exposed output-interface failures that answer-only evaluation would
+blur. The Granite-4.0-1B repetition failure occurred before semantic evaluation.
+A03 often produced superficially citation-like values that did not match exact
+retrieved IDs. The deterministic guard then rejected unsupported or malformed
+outputs. These are not cosmetic parser errors: a production evidence system needs
+machine-actionable citations and predictable abstention. Still, exact-ID scoring
+can be harsher than human recoverability, so future work should separate schema
+conformance from semantic citation entailment instead of treating either as the
+other.
+
+The observed failure suggests a mandatory compatibility gate per
+model--prompt--runtime triple: validate the chat template, schema adherence,
+termination behavior, and citation serialization before collecting expensive
+route matrices. A compatibility failure should create a new versioned experimental
+specification rather than a silent prompt repair after test access.
+
+\subsection{Measured Energy Is Not Total RAG Energy}
+
+Every grounded endpoint increased the energy observed during generation, consistent
+with longer prompts and, frequently, longer outputs. This does not imply that the
+reported difference equals the total energy cost of RAG. CPU dense encoding,
+lexical search, memory traversal, routing, and verification are absent from the
+energy quantity. Nor are host idle power, storage, cooling, and network transfers.
+The result supports a narrower statement: under these frozen routes and same-board
+matched pairs, generation itself consumed more selected-board energy when the
+grounded prompt was used.
+
+Future evaluations should add synchronized CPU/host power measurement, idle-power
+subtraction where appropriate, repeated interleaved trials, and an explicit
+boundary diagram. Reporting per-query energy together with token counts, latency,
+and useful successes would make overhead and output-length effects more legible.
+
+\subsection{Robustness Requires a Nonzero Clean Reference}
+
+A zero corruption delta is meaningful only when the clean system performs the
+task. Here the selected route began at zero, so the corruption study cannot
+distinguish stable failure from robust competence. A better robustness gate would
+first require a minimum clean utility for each evaluated anchor, then report both
+absolute corrupted success and paired degradation. Attack-specific compromise
+metrics should likewise be presented as narrow detectors, not substitutes for
+task success or general adversarial robustness.
+
+\subsection{Actionable Recommendations}
+
+The evidence supports five concrete design rules:
+
+\begin{enumerate}
+    \item gate model/chat-template/schema compatibility before route benchmarking;
+    \item establish generator- and task-specific grounding value before training a
+    controller;
+    \item treat validation infeasibility as a first-class result with a fail-closed
+    deployment state;
+    \item measure and label energy boundaries precisely, and avoid causal energy
+    comparisons across unbalanced boards or sessions;
+    \item require nonzero clean utility before interpreting robustness deltas.
+\end{enumerate}

@@ -1,0 +1,105 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Retrieval-augmented generation (RAG) gives a language model access to evidence
+that is fresher, more specific, or more auditable than its parameters alone
+\cite{Lewis2020RAG}. In practice, however, ``adding RAG'' is not one intervention.
+A deployed pipeline may decide whether to retrieve, choose sparse or dense search,
+expand a second hop, consult long-term memory, lengthen the prompt, invoke a larger
+generator, verify citations, or abstain. Each decision changes both the available
+evidence and the work performed. A quality-only evaluation can therefore reward a
+route that is too expensive to deploy, while a cost-only router can learn to choose
+cheap routes that do not satisfy the evidence contract.
+
+This tension is especially sharp for compact language models. Small generators are
+attractive for local and resource-constrained inference, but retrieved context is
+useful only if the generator can identify the relevant facts, follow the requested
+schema, cite the correct evidence, and withhold unsupported answers. Imperfect or
+distracting context can actively reduce answer quality
+\cite{OhThorne2023DetrimentalContexts,ParkLee2024RobustRALM}. Consequently, the
+effect of grounding is an interaction among the generator, retrieval mechanism,
+memory organization, prompt budget, and verifier; it is not a property of the
+retriever in isolation.
+
+Efficiency introduces a second ambiguity. Prior work has argued that computational
+cost should be reported alongside predictive quality
+\cite{SchwartzEtAl2020GreenAI,HendersonEtAl2020EnergyReporting}, and inference itself
+can be a material energy burden \cite{LuccioniEtAl2024PowerHungry}. Yet ``energy''
+may refer to a GPU board, a host, an entire cluster, or a carbon estimate. This
+study uses a deliberately narrow, reproducible quantity: board-power samples from
+the selected NVIDIA T4 integrated over the call to \texttt{model.generate()}.
+Retrieval runs on CPU and is charged to latency, not to the reported GPU-energy
+quantity. We make that boundary explicit because equating GPU board energy with
+whole-system energy or carbon would be scientifically incorrect.
+
+Model routing appears to offer a natural solution. Cascades and learned routers can
+trade quality against monetary or computational cost
+\cite{ChenZahariaZou2024FrugalGPT,DingEtAl2024HybridLLM,OngEtAl2024RouteLLM}. For a
+RAG system, however, a router must choose among composite actions rather than only
+among model endpoints. Its candidate pool must also contain routes whose success is
+predictable from information available at decision time. Calibration alone cannot
+create such separation: a controller that predicts failure for every action can be
+well calibrated but operationally useless.
+
+We study these issues through \system, a frozen controlled experiment rather than
+a claim about open-domain question answering. \bench{} contains 800 deterministic
+scenario groups spanning direct copying, knowledge retrieval, personal memory,
+knowledge--memory composition, temporal updates, authority conflicts, two-hop
+retrieval, and deleted or missing evidence. Opaque identifiers prevent parametric
+memorization of the answers. Grouped splits isolate pilot pruning, router fitting,
+calibration, threshold selection, and a 120-question sealed test. A strict success
+indicator requires both answer correctness and exact satisfaction of the
+applicable citation, abstention, and forbidden-evidence conditions.
+
+The experiment separates three questions. First, a controlled mechanism matrix
+compares direct generation with BM25, dense, hybrid, and three memory organizations.
+Second, a five-generator matched panel applies the same direct and grounded route
+to Qwen3-0.6B, Granite-4.0-1B, Granite-4.1-3B, SmolLM3-3B, and
+Qwen3-4B-Instruct-2507. Third, a two-stage calibrated router uses only deployable
+tiny/small routes and is tested against a validation-selected fixed route. All
+clean test routes cover the same 120 questions, permitting paired, scenario-cluster
+bootstrap analysis.
+
+The outcome is informative precisely because it is not a routing success. The
+validation constraints were infeasible: no threshold reached the frozen 80\%
+success floor while satisfying coverage and abstention bounds. Before test labels
+were accessed, a documented amendment expanded the threshold grid and froze a
+fail-closed threshold of one, explicitly forbidding a positive hypothesis claim.
+The resulting policy selected its safe fallback, \route{A03\_tiny\_hybrid}, for all
+test questions. It achieved zero strict success and reproduced the baseline's
+143.16 J/query, so the predeclared energy-reduction hypothesis failed.
+
+The matched generator panel nevertheless exposes a substantial interaction.
+Grounding changed strict success by $-12.5$ \pp{} for Qwen3-0.6B,
+$+23.3$ \pp{} for Granite-4.1-3B, $+10.8$ \pp{} for SmolLM3-3B, and
+$+29.2$ \pp{} for Qwen3-4B. Every grounded endpoint had a higher observed
+generation-window GPU-energy mean; four of the five pairs were same-board. The
+small Granite-4.0-1B pair produced no
+parseable outputs under the frozen prompt/runtime contract, so it is treated as a
+compatibility failure rather than evidence of general model incapacity.
+
+The paper makes five contributions:
+
+\begin{enumerate}
+    \item a deterministic benchmark that isolates retrieval, memory, temporal,
+    authority, abstention, and citation requirements under grouped leakage controls;
+    \item a matched five-generator design that distinguishes generator-dependent
+    grounding effects from a flat model leaderboard;
+    \item an explicit generation-window GPU-energy protocol with complete telemetry,
+    paired latency measurement, and no carbon or whole-system extrapolation;
+    \item a calibrated composite-action routing protocol with test sealing,
+    abstention and coverage constraints, immutable artifacts, and fresh-root restore;
+    \item a reproducible negative result identifying validation infeasibility,
+    safe-route collapse, context-sensitive tiny-model behavior, a model-format
+    incompatibility, and robustness floor effects.
+\end{enumerate}
+
+The central conclusion is bounded but consequential: having a useful action is not
+enough if the frozen calibration constraints and decision rule cannot certify or
+select it. Here, sealed-test analysis later showed that direct route A00 was both
+more accurate and lower-energy than the universal fallback A03, even though no
+validation threshold satisfied the predeclared 80\% success floor together with
+coverage and abstention constraints. Before an energy-aware RAG controller is
+optimized, each generator's ability to use the grounding contract and the
+feasibility of the selection rule must be established; operational infeasibility
+must remain a reportable outcome rather than an exception to suppress.

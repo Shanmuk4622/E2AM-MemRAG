@@ -86,11 +86,12 @@ The strongest paper is a controlled negative-result and systems-diagnosis study:
 **energy-aware routing fails when lightweight generator/grounding combinations do
 not produce separable strict-success signal, while grounding benefits remain
 strongly generator-dependent.** The contribution is the frozen benchmark,
-end-to-end energy accounting, calibrated routing protocol, and failure analysis--
+generation-window GPU-board energy accounting, calibrated routing protocol, and failure analysis--
 not a claim that the learned policy reduced energy.
 
-Claims must remain bounded to this controlled synthetic benchmark, one T4,
-selected-GPU board energy, the frozen model revisions, and strict
+Claims must remain bounded to this controlled synthetic benchmark, one visible T4
+per worker (four physical boards across clean lanes), selected-GPU board energy,
+the frozen model revisions, and strict
 support-qualified success. Carbon, whole-system energy, public-benchmark SOTA,
 and broad real-world generalization are outside the evidence.
 

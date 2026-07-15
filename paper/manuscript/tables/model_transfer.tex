@@ -1,0 +1,17 @@
+\begin{table*}[t]
+\caption{Matched direct-to-grounded transfer on the same 120 sealed-test questions. Success effects are percentage points; energy effects are generation-window selected-GPU board joules per query. ``Same board'' indicates whether both endpoints ran on the same physical T4.}
+\label{tab:model-transfer}
+\centering
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Generator & Direct (\%) & Grounded (\%) & $\Delta$ success [95\% CI] & $\Delta$ GPU J [95\% CI] & Same board \\
+\midrule
+Qwen3 0.6B & 12.5 & 0.0 & -12.5 [-18.3, -6.7] & +146.72 [+141.56, +151.62] & yes \\
+Granite 4.0 1B & 0.0 & 0.0 & +0.0 [+0.0, +0.0] & +3.88 [+1.73, +6.14] & no \\
+Granite 4.1 3B & 20.8 & 44.2 & +23.3 [+10.0, +37.5] & +119.53 [+108.73, +129.74] & yes \\
+SmolLM3 3B & 23.3 & 34.2 & +10.8 [-2.5, +24.2] & +41.52 [+35.47, +47.50] & yes \\
+Qwen3 4B Instruct & 13.3 & 42.5 & +29.2 [+16.7, +41.7] & +171.71 [+157.74, +185.24] & yes \\
+\bottomrule
+\end{tabular}
+\end{table*}

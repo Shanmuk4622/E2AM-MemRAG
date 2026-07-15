@@ -1,0 +1,13 @@
+{
+  "diagnosis": "frozen prompt/runtime-format incompatibility; not a general model-capability claim",
+  "max_new_tokens_rows": 240,
+  "most_common_output_count": 240,
+  "most_common_output_sha256": "bb97362bfafec933780874ef2528ea296cc739a27b7f5c0010d26a724563d59e",
+  "parseable_rows": 0,
+  "routes": [
+    "A04_small_direct",
+    "A13_small_hybrid_verified"
+  ],
+  "rows": 240,
+  "unique_outputs": 1
+}

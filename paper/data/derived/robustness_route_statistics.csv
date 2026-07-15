@@ -1,0 +1,13 @@
+condition,route_id,queries,success_rate,abstention_rate,mean_gpu_joules
+conflict_injection,A00_tiny_direct,120,0.125,0.30833333333333335,69.32371047329869
+conflict_injection,A03_tiny_hybrid,120,0.0,0.15833333333333333,163.14006156956745
+conflict_injection,A13_small_hybrid_verified,120,0.0,1.0,270.76500124309314
+deletion_duplicates,A00_tiny_direct,120,0.125,0.30833333333333335,66.54642501308591
+deletion_duplicates,A03_tiny_hybrid,120,0.0,0.15,157.3973110569009
+deletion_duplicates,A13_small_hybrid_verified,120,0.0,1.0,266.94867527897054
+missing,A00_tiny_direct,120,0.125,0.30833333333333335,67.1653989801752
+missing,A03_tiny_hybrid,120,0.0,0.18333333333333332,154.41994081658925
+missing,A13_small_hybrid_verified,120,0.0,1.0,274.74824783099416
+stale,A00_tiny_direct,120,0.125,0.30833333333333335,66.5933686241321
+stale,A03_tiny_hybrid,120,0.0,0.15,160.24205829907862
+stale,A13_small_hybrid_verified,120,0.0,1.0,277.63618887120373

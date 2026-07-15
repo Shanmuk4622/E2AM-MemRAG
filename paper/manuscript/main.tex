@@ -1,0 +1,83 @@
+\documentclass[journal,10pt]{IEEEtran}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{cite}
+\usepackage{url}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{figures/}{../figures/}}
+\input{macros}
+\input{metadata}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Retrieval, external memory, and evidence verification are often attached to small
+language models under the assumption that more grounding will improve reliability.
+That assumption ignores two coupled questions: whether a generator can use the
+added evidence under a strict output contract, and whether the resulting quality
+gain justifies its computational cost. We present E2AM-MemRAG, a controlled study
+of generator-dependent grounding and energy-aware routing. The study constructs
+800 deterministic scenario groups across eight evidence and memory tasks, freezes
+grouped train/calibration/validation/test splits, and evaluates 17 pilot-retained
+routes on 120 sealed-test questions. Five pinned FP16 generators are compared
+directly and under an identical hybrid-retrieval, graph-memory, and deterministic
+verification route. Success requires answer correctness, complete required-evidence
+citations, perfect citation precision, correct abstention, parseability, and no
+forbidden evidence. Generation-window selected-GPU board energy is obtained by
+integrating 50-ms NVML power samples on NVIDIA T4 GPUs; CPU and whole-system energy
+are outside this boundary.
+
+Grounding was not uniformly beneficial. It changed strict success by
+$-12.5$ percentage points for Qwen3-0.6B, $+23.3$ points for Granite-4.1-3B,
+$+10.8$ points for SmolLM3-3B, and $+29.2$ points for Qwen3-4B. Every grounded
+endpoint had a higher observed GPU-energy mean; four pairs were same-board and
+the Granite-4.0-1B contrast was cross-board. The best route reached 44.2\% strict
+success at 176.68 J/query. The router's validation constraints were infeasible;
+a disclosed pre-test amendment froze a fail-closed threshold and prohibited a
+positive routing claim. On test, the policy fell back to the same route for all
+queries, obtained 0\% strict success, and saved 0 J, so the confirmatory hypothesis
+failed. The result is a mechanism-level negative finding: infeasible calibration
+constraints and an uninformative fail-closed rule can nullify an otherwise useful
+route set, and grounding gains must be established per generator rather than assumed.
+\end{abstract}
+
+\begin{IEEEkeywords}
+retrieval-augmented generation, language-model routing, Green AI, GPU energy,
+long-term memory, abstention, negative results, reproducible evaluation
+\end{IEEEkeywords}
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_hybridbench}
+\input{sections/04_methodology}
+\input{sections/05_experimental_protocol}
+\input{sections/06_results}
+\input{sections/07_failure_analysis}
+\input{sections/08_limitations_ethics}
+\input{sections/09_conclusion}
+
+\appendices
+\input{appendices/route_catalog}
+\input{appendices/scoring_contract}
+\input{appendices/reproducibility}
+\input{appendices/scenario_effects}
+
+\section*{Acknowledgment}
+The author thanks the open-source model and tooling communities whose released
+artifacts made the controlled study possible. No external sponsor influenced the
+study design, analysis, or reporting.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

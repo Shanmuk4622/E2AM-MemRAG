@@ -1,0 +1,34 @@
+\begin{table*}[t]
+\caption{Predeclared route catalog and pilot retention. A05--A07, A11, and A15 were removed only by the frozen pilot rule; all mandatory matched endpoints were retained.}
+\label{tab:route-catalog}
+\centering
+\scriptsize
+\begin{tabularx}{\textwidth}{@{}llXlrr@{}}
+\toprule
+ID & Generator & Mechanism & Test retained & Success & GPU J \\
+\midrule
+A00 & Qwen3 0.6B & Direct & yes & 12.5\% & 54.71 \\
+A01 & Qwen3 0.6B & BM25 knowledge & yes & 0.0\% & 157.68 \\
+A02 & Qwen3 0.6B & Dense knowledge & yes & 0.0\% & 150.41 \\
+A03 & Qwen3 0.6B & Bounded hybrid knowledge & yes & 0.0\% & 143.16 \\
+A04 & Granite 4.0 1B & Direct & yes & 0.0\% & 256.98 \\
+A05 & Granite 4.0 1B & BM25 knowledge & no & -- & -- \\
+A06 & Granite 4.0 1B & Dense knowledge & no & -- & -- \\
+A07 & Granite 4.0 1B & Bounded hybrid knowledge & no & -- & -- \\
+A08 & Qwen3 0.6B & Flat memory & yes & 0.0\% & 148.96 \\
+A09 & Qwen3 0.6B & Hierarchical memory & yes & 0.0\% & 170.32 \\
+A10 & Qwen3 0.6B & Graph/temporal memory & yes & 0.0\% & 171.49 \\
+A11 & Granite 4.0 1B & Graph/temporal memory & no & -- & -- \\
+A12 & Granite 4.0 1B & Hybrid knowledge + flat memory & yes & 0.0\% & 258.54 \\
+A13 & Granite 4.0 1B & Hybrid + graph memory + guard & yes & 0.0\% & 260.85 \\
+A14 & Qwen3 4B Instruct & Hybrid + graph memory + guard & yes & 42.5\% & 256.13 \\
+A15 & Granite 4.0 1B & BM25 + hierarchical memory + guard & no & -- & -- \\
+M16 & Qwen3 0.6B & Matched grounded/verified & yes & 0.0\% & 201.44 \\
+M17 & Granite 4.1 3B & Matched direct & yes & 20.8\% & 57.14 \\
+M18 & Granite 4.1 3B & Matched grounded/verified & yes & 44.2\% & 176.68 \\
+M19 & SmolLM3 3B & Matched direct & yes & 23.3\% & 107.42 \\
+M20 & SmolLM3 3B & Matched grounded/verified & yes & 34.2\% & 148.93 \\
+M21 & Qwen3 4B Instruct & Matched direct & yes & 13.3\% & 84.42 \\
+\bottomrule
+\end{tabularx}
+\end{table*}

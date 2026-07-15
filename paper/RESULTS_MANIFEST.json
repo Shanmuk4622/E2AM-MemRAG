@@ -7,6 +7,11 @@
       "sha256": "a085b4d7d73740b266e4228ee552bdfcfb01077c6a8c61a0d9d35a65a6247178"
     },
     {
+      "bytes": 417,
+      "path": "paper/data/derived/granite_1b_output_audit.json",
+      "sha256": "1534432f9dd27dcc64e5439fb7ce3528ec5a430dcf30763267b7cee5a38156f0"
+    },
+    {
       "bytes": 173,
       "path": "paper/data/derived/hypothesis_gates.csv",
       "sha256": "bfea991319b63f075521cef39eb28c8335f4a7f500b31c2b534ddda91e8072e1"
@@ -22,14 +27,24 @@
       "sha256": "49583fa9ccb5032717f8f08ca95979b4d0ebb27ea72c10eb1dbeba8267c6a87f"
     },
     {
-      "bytes": 5852,
+      "bytes": 5913,
       "path": "paper/data/derived/results_summary.json",
-      "sha256": "a8da39f4e7e8ffabeb86eae39c5904df6370473da6e3739790cf3d8ee987112f"
+      "sha256": "cb94685910d2e68f02ddd11c89dfb7346544545d156faf5ce01cd5db9a95b56f"
     },
     {
       "bytes": 463,
       "path": "paper/data/derived/robustness_conditions.csv",
       "sha256": "432247f11204c07b4cf7b2db428953e8055440ebfab0da327a2eddb66950ff04"
+    },
+    {
+      "bytes": 934,
+      "path": "paper/data/derived/robustness_route_statistics.csv",
+      "sha256": "2f76ca02d12cff0a820cee75a02e576b220aa0aa910478a620f1b0914e89b83e"
+    },
+    {
+      "bytes": 550,
+      "path": "paper/data/derived/route_hardware.csv",
+      "sha256": "2b795eae2c9afab9539011b80c2bf98f04ad169da1e65d67e6e1f385311633c2"
     },
     {
       "bytes": 1464,
@@ -122,6 +137,16 @@
       "sha256": "b1627b04695f502aec75d1424b57a42f0928446cd35c6d3302d69f8a58ab685f"
     },
     {
+      "bytes": 2261,
+      "path": "paper/data/raw/stage06_frozen_policy.json",
+      "sha256": "fda2bda0a715227162ceead0ff032f2228999f6dc9f4bb22890ec23a4acdab14"
+    },
+    {
+      "bytes": 555,
+      "path": "paper/data/raw/stage06_frozen_policy.provenance.json",
+      "sha256": "6015a78935fda8ea1ba50600a9760196fc42ae7b52c953ef4b76edb2eff56c76"
+    },
+    {
       "bytes": 21661,
       "path": "paper/figures/model_grounding_effect.png",
       "sha256": "5f83c866640aceff435b4311cafc5c7d60f6419fa552c612cb0f5a05eb20da9f"
@@ -137,14 +162,179 @@
       "sha256": "9737da9fc285b252445e0d69406bcfbd5c2a7df8fa93f8bbe4f2c45de2ea73c3"
     },
     {
-      "bytes": 4603,
+      "bytes": 4632,
       "path": "paper/figures/route_quality_energy.svg",
-      "sha256": "72c6cabb274e6f1956ee8fd10ab83acf877d54043eb2ea0443a6c633ec13d955"
+      "sha256": "dae3c6523e5c61a6f46bd74abae6f2198e0143546e3a0f0bde95ef8bdf5e5a0f"
     },
     {
-      "bytes": 6577,
+      "bytes": 2356,
+      "path": "paper/manuscript/appendices/reproducibility.tex",
+      "sha256": "51687b0acb2ca627d7f6cdb4d59635883a6b9190ae9c9cce35f5255f19460ede"
+    },
+    {
+      "bytes": 706,
+      "path": "paper/manuscript/appendices/route_catalog.tex",
+      "sha256": "8749ca742dc4df90ebfd59b1758e3e7124e991a0902f376d8135b9ca0dfd0ff1"
+    },
+    {
+      "bytes": 1626,
+      "path": "paper/manuscript/appendices/scenario_effects.tex",
+      "sha256": "6ab52411331b0efab6dc04700d37a9a65a6b7b62cfadbcc7b3ea119a4eea524a"
+    },
+    {
+      "bytes": 2476,
+      "path": "paper/manuscript/appendices/scoring_contract.tex",
+      "sha256": "c4072a3b3b676811bf0e80b6d7f47c92fa5f4627f822684881d6cd8880b24bf1"
+    },
+    {
+      "bytes": 2026,
+      "path": "paper/manuscript/BUILD.md",
+      "sha256": "2f6a9cfe8bf979645256989b13c1c40cc3698e21c56adcab8271fd00badc3abe"
+    },
+    {
+      "bytes": 159397,
+      "path": "paper/manuscript/figures/grounding_effect_forest.png",
+      "sha256": "42cc9d50731526b76a16c58704d6c8ae7b6b45db11fd5676052c5a22ccc28fa1"
+    },
+    {
+      "bytes": 9000,
+      "path": "paper/manuscript/figures/grounding_effect_forest.svg",
+      "sha256": "ab9846b76567ce39a957506c5d8041140dcd5b572ca1f8fbb10a836e9192e968"
+    },
+    {
+      "bytes": 127615,
+      "path": "paper/manuscript/figures/route_quality_energy.png",
+      "sha256": "655d7f4474041a06c4992391f57bde8ae7c9f0e171859fe505e74ba43a244ba7"
+    },
+    {
+      "bytes": 4632,
+      "path": "paper/manuscript/figures/route_quality_energy.svg",
+      "sha256": "dae3c6523e5c61a6f46bd74abae6f2198e0143546e3a0f0bde95ef8bdf5e5a0f"
+    },
+    {
+      "bytes": 250178,
+      "path": "paper/manuscript/figures/system_overview.png",
+      "sha256": "ae4ff6ea5b397d98bc965084d37c1be8ffe85d0f50e117fba128113f24490702"
+    },
+    {
+      "bytes": 5632,
+      "path": "paper/manuscript/figures/system_overview.svg",
+      "sha256": "02a683f24a5421caf819ccefe5fc827b32d374d6c89803466a596d57d198b155"
+    },
+    {
+      "bytes": 926,
+      "path": "paper/manuscript/macros.tex",
+      "sha256": "310180b6f84c094513673eedd37274c50df1766655f57bb96156488c48fe31b7"
+    },
+    {
+      "bytes": 3494,
+      "path": "paper/manuscript/main.tex",
+      "sha256": "5a5261869a2d5c848736bb557a3149032eeaf5dbf8cb25e407a7fff759eb3ef6"
+    },
+    {
+      "bytes": 418,
+      "path": "paper/manuscript/metadata.tex",
+      "sha256": "2aa2e44699896488febd4f5d30a74f6e38be298557f415c6f94ddb3486e273ba"
+    },
+    {
+      "bytes": 14050,
+      "path": "paper/manuscript/references.bib",
+      "sha256": "1ec18ebe53d33449e4de33b3c1b536e6a50036884d6a2b2cd7de027ab2a2a83c"
+    },
+    {
+      "bytes": 6859,
+      "path": "paper/manuscript/sections/01_introduction.tex",
+      "sha256": "bae69b5754ccad23793b4404ec24a54054293fe4238b474f0e00ffec88811766"
+    },
+    {
+      "bytes": 5353,
+      "path": "paper/manuscript/sections/02_related_work.tex",
+      "sha256": "5c7861101e310d75292b5b0682a64a783e6800163ecde326b8f2a77d26d11a11"
+    },
+    {
+      "bytes": 4936,
+      "path": "paper/manuscript/sections/03_hybridbench.tex",
+      "sha256": "dace601a0e929f3daef1951874d8fec5031bcfb063dd513abc57f93651b6f0d6"
+    },
+    {
+      "bytes": 6189,
+      "path": "paper/manuscript/sections/04_methodology.tex",
+      "sha256": "3ad6d7f154ce87368bba407c99ebdea0b071e7cd230a85c7206bae3ec1f930ac"
+    },
+    {
+      "bytes": 5980,
+      "path": "paper/manuscript/sections/05_experimental_protocol.tex",
+      "sha256": "06575f7031f355775c678715305aef09726da2b37d99bdc80956bbd08073660f"
+    },
+    {
+      "bytes": 8402,
+      "path": "paper/manuscript/sections/06_results.tex",
+      "sha256": "20f39aafa4b07a96c63385ab470e85ad75ba79bc61bc084096dd6ed42ab41963"
+    },
+    {
+      "bytes": 5591,
+      "path": "paper/manuscript/sections/07_failure_analysis.tex",
+      "sha256": "d3b6eb832fdd241c2262c39a0a324ac8a5b159006b6112ec4d374b8e8a3d8cb3"
+    },
+    {
+      "bytes": 4372,
+      "path": "paper/manuscript/sections/08_limitations_ethics.tex",
+      "sha256": "598767caeb83bafb30727ba9dadc257eed0f325cf0168365a05b0eee3fde107a"
+    },
+    {
+      "bytes": 1670,
+      "path": "paper/manuscript/sections/09_conclusion.tex",
+      "sha256": "a37f241af04e0c653bd50e0424ef30e1a9c1ee1a640ff1f2e2b1aaebf89e42be"
+    },
+    {
+      "bytes": 830,
+      "path": "paper/manuscript/tables/confirmatory_result.tex",
+      "sha256": "fb5138bcb4da85c90feeb3daf3b7215e031e76740fa8a2903dfc3fa6ca56c03d"
+    },
+    {
+      "bytes": 968,
+      "path": "paper/manuscript/tables/hardware_assignment.tex",
+      "sha256": "d303ea1b3cdca4a13f331e5567e4a6d110b8a013a2c0252883c5be95d6281120"
+    },
+    {
+      "bytes": 905,
+      "path": "paper/manuscript/tables/model_panel.tex",
+      "sha256": "c6888690f31afa0c85db8a4f4318e8aac1738c1cb922566432c804af9489c49d"
+    },
+    {
+      "bytes": 981,
+      "path": "paper/manuscript/tables/model_transfer.tex",
+      "sha256": "cfe5b09ed9fdfdfec917113a524b90df32b091878f3713ad838bed5735a381a7"
+    },
+    {
+      "bytes": 513,
+      "path": "paper/manuscript/tables/robustness.tex",
+      "sha256": "3c8f76af1081c23e6230678b6253df103a80c2ae78d282d358d4151deec45535"
+    },
+    {
+      "bytes": 1896,
+      "path": "paper/manuscript/tables/route_catalog.tex",
+      "sha256": "00cf60921f6863e839a478c4553d52a09a9052bbc841f6ba7e80add83b5aa0d0"
+    },
+    {
+      "bytes": 602,
+      "path": "paper/manuscript/tables/route_highlights.tex",
+      "sha256": "175e6c44525b1c3d618ccb7fd864eab05170cd486a2d389c14883c496499e5d3"
+    },
+    {
+      "bytes": 556,
+      "path": "paper/manuscript/tables/trace_integrity.tex",
+      "sha256": "c7ba2a69ccd6931159e265c1cfeae04a5a4291b6743f0d67b774d187b026bbb7"
+    },
+    {
+      "bytes": 967,
+      "path": "paper/manuscript/VALIDATION_REPORT.json",
+      "sha256": "8f8cd771fb30347d76e448445d6cad035b82894a6a39642772b7835c647f83f2"
+    },
+    {
+      "bytes": 7446,
       "path": "paper/PAPER_BLUEPRINT.md",
-      "sha256": "83f5c8975713baebdacf2c87b44dee9028c37a66390503c624418badd64353be"
+      "sha256": "564b45de84d7eee089193924709721c444ae25ad20db48ca48a4b2fb0315d27c"
     },
     {
       "bytes": 1111,
@@ -152,9 +342,9 @@
       "sha256": "fd14050d608e0360d27b43c45d48b287aa05fabc91eb826952bb37b0754e59be"
     },
     {
-      "bytes": 4155,
+      "bytes": 4234,
       "path": "paper/RESULTS_AUDIT.md",
-      "sha256": "67cee137e3df9f3fc4fd5dbac827bc3e7ec3fe0a26071d51efc01f19bfdee6cd"
+      "sha256": "ab2106307c5d70c3434604539942c34a2d24405c62359877dd068469cbdae614"
     },
     {
       "bytes": 488,

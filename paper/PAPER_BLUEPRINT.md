@@ -2,20 +2,22 @@
 
 ## Recommended title
 
-**E2AM-MemRAG: Generator-Dependent Grounding and Failure Modes of
-Energy-Aware Routing for Small Language Models**
+**E2AM-MemRAG: When Grounding Helps, Hurts, and Costs More---A Controlled
+Study of Generator-Dependent RAG and Energy-Aware Routing**
 
 Alternative title: **When RAG Costs More and Helps Less: A Controlled
 Quality-Energy Study of Retrieval and Memory for Small LLMs**
 
 ## Central paper claim
 
-In a frozen, single-T4 synthetic benchmark with strict support-qualified
-success, grounding is not uniformly beneficial: it materially improves selected
-3B/4B generators, harms the 0.6B generator, and always increases selected-GPU
-energy. A calibrated energy-aware router can therefore fail by collapsing to an
-uninformative baseline when its lightweight candidate routes provide insufficient
-strict-success separation.
+In a frozen synthetic benchmark with one visible T4 per worker and strict
+support-qualified success, grounding is not uniformly beneficial: it materially
+improves selected 3B/4B generators and removes the only successful stratum of the
+0.6B generator. Every grounded endpoint has a higher observed generation-window
+selected-GPU energy mean; four of five matched pairs are same-board. A calibrated
+energy-aware router can therefore fail by collapsing to an uninformative baseline
+when its lightweight candidate routes provide insufficient strict-success
+separation.
 
 This is a negative-result and mechanism paper. The learned router did not reduce
 energy and the confirmatory hypothesis failed.
@@ -34,8 +36,9 @@ energy and the confirmatory hypothesis failed.
 
 1. A deterministic 800-scenario synthetic benchmark with eight task classes,
    grouped splits, frozen evidence, and strict citation/support scoring.
-2. End-to-end selected-GPU board-energy accounting across retrieval, memory,
-   generation, verification, probing, and maintenance charged to each route.
+2. Generation-window selected-GPU board-energy measurement, paired with explicit
+   retrieval-plus-generation latency and policy-side probe/router timing. CPU and
+   whole-system energy are outside the measurement boundary.
 3. A matched five-model direct-versus-grounded panel on the same 120 test
    questions, prompt budget, decoding configuration, and route contract.
 4. A calibrated Pareto-routing protocol with explicit abstention, execution
@@ -69,6 +72,9 @@ energy and the confirmatory hypothesis failed.
 - Five-model direct-grounded panel.
 - Strict support-qualified success definition.
 - Selected-GPU board-energy measurement and scope.
+- The disclosed post-validation/pre-test Stage-06 amendment: the validation
+  constraints were infeasible, so a fail-closed threshold of 1.0 was frozen and
+  no positive router claim was permitted.
 - Router features, calibration, thresholding, abstention, and frozen gates.
 - Immutable worker closures and restoration verification.
 
@@ -116,6 +122,11 @@ clean selected-policy success was already zero.
 - Controlled synthetic benchmark rather than a public QA benchmark.
 - One hardware class and selected-GPU energy rather than whole-system energy.
 - One seed in the released confirmatory evaluation.
+- Four physical T4 boards across worker lanes; cross-lane energy contrasts are
+  descriptive because board/session effects are not separately identified.
+- The Granite 4.0 1B checkpoint exhibited a frozen prompt/runtime-format failure
+  (80 exclamation marks and zero parseable outputs), so its zero-success pair is
+  not evidence of general model incapacity.
 - Frozen prompt and parser contracts.
 - No carbon claim and no broad real-world generalization claim.
 
@@ -156,5 +167,6 @@ Not allowed:
 - The router reduced energy.
 - Zero robustness delta demonstrates robustness.
 - GPU board energy equals whole-system energy or carbon emissions.
+- Retrieval, memory, verification, or routing energy was directly measured.
 - The results establish public-benchmark SOTA or broad production behavior.
 - All RAG or memory systems harm small models in general.

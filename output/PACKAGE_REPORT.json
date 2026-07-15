@@ -1,0 +1,9 @@
+{
+  "overleaf_zip": "output/latex/E2AM_MemRAG_Overleaf.zip",
+  "pdf": "output/pdf/E2AM_MemRAG_Paper.pdf",
+  "pdf_bytes": 696243,
+  "pdf_sha256": "227df9d81c6777e20a1c330461f59c4a42ff37e9a23b802b063fe155d4544da8",
+  "source_files": 33,
+  "zip_bytes": 526241,
+  "zip_sha256": "6378b81e8c3559dd259c86923c1f1acdfeacf3ab46b32f8789b0e79b5a2bf7c6"
+}

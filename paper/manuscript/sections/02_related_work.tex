@@ -1,0 +1,87 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Retrieval-Augmented and Adaptive Generation}
+
+RAG combines a parametric generator with retrieved non-parametric evidence
+\cite{Lewis2020RAG}. Sparse retrieval remains a strong and interpretable baseline;
+our lexical routes implement the BM25 probabilistic relevance formulation
+\cite{RobertsonZaragoza2009BM25}. Dense passage retrieval and sentence-level
+bi-encoders provide complementary semantic signals
+\cite{KarpukhinEtAl2020DPR,ReimersGurevych2019SBERT}. The hybrid routes in this
+study fuse sparse and dense ranks and then perform a bounded deterministic second
+hop, rather than adding an independently trained reranker.
+
+Always-on retrieval is not universally optimal. FLARE initiates retrieval when a
+model encounters uncertain future content \cite{JiangEtAl2023FLARE}; Adaptive-RAG
+routes questions among no-retrieval, single-step, and iterative strategies based on
+estimated complexity \cite{JeongEtAl2024AdaptiveRAG}; and Self-RAG learns retrieval
+and critique tokens to regulate evidence use \cite{AsaiEtAl2024SelfRAG}. These
+systems motivate conditional grounding, but they do not establish that a compact
+generator receives a positive quality--energy return from a particular evidence
+contract. \system{} instead freezes the generator-route combinations and measures
+their paired effects before evaluating a router.
+
+\subsection{External Memory and Evidence Quality}
+
+External memory extends the evidence problem from documents to persistent,
+time-indexed state. LongMem separates a frozen backbone from a long-term memory
+network \cite{WangEtAl2023LongMem}; MemoryBank studies acquisition, retrieval,
+updating, and forgetting \cite{ZhongEtAl2024MemoryBank}; and MemGPT frames tiered
+memory management as an operating-system problem \cite{PackerEtAl2023MemGPT}.
+Our flat, hierarchical, and graph/temporal routes are not new memory architectures.
+They are controlled mechanisms for testing whether organization, recency, entity
+links, and tombstones change strict grounded success under a fixed context budget.
+
+Evaluation must distinguish answer plausibility from evidential support. KILT
+couples knowledge-intensive tasks with provenance \cite{PetroniEtAl2021KILT}, while
+ALCE evaluates citation correctness and completeness for generated answers
+\cite{GaoEtAl2023ALCE}. In the present benchmark, citations are exact identifiers
+in a generated evidence universe. The guard checks parseability, retrieved-set
+membership, exact required-evidence recall, precision, and forbidden evidence; it
+is deterministic and is not described as semantic entailment.
+
+Imperfect retrieval can introduce stale, conflicting, irrelevant, or adversarial
+context \cite{ParkLee2024RobustRALM}, and additional context may be detrimental
+even when it appears topically related \cite{OhThorne2023DetrimentalContexts}.
+These observations motivate our four corruption conditions and the decision to
+report abstention and clean-baseline efficacy alongside robustness deltas.
+
+\subsection{Routing, Calibration, and Abstention}
+
+FrugalGPT showed that cascades can reduce API cost while preserving or improving
+task quality \cite{ChenZahariaZou2024FrugalGPT}. Hybrid LLM learns a quality-aware
+router between local and remote models \cite{DingEtAl2024HybridLLM}, and RouteLLM
+uses preference data to route between stronger and weaker endpoints
+\cite{OngEtAl2024RouteLLM}. Recent benchmark evidence further shows that router
+rankings depend strongly on the model pool and that sophisticated controllers can
+approach simple baselines when the pool is poorly separated
+\cite{LiEtAl2026LLMRouterBench}. These works primarily optimize monetary or model
+selection cost. Our action is a composite of generator, retrieval, memory, and
+verification choices, and the measured cost is physical GPU-board energy during
+generation.
+
+The controller combines probability calibration with a reject option. Post-hoc
+calibration is essential when probabilities drive operational decisions
+\cite{GuoEtAl2017Calibration}, while selective prediction formalizes the trade-off
+between coverage and risk \cite{GeifmanElYaniv2019SelectiveNet}. We therefore report
+calibration, execution coverage, and abstention separately. A low Brier score at
+near-zero confidence is not interpreted as useful discrimination when all selected
+test outcomes fail.
+
+\subsection{Energy Reporting for Machine Learning}
+
+Green AI argues that efficiency should be a first-class evaluation dimension
+\cite{SchwartzEtAl2020GreenAI}; related work documents the environmental and policy
+importance of computationally intensive NLP \cite{StrubellEtAl2019EnergyNLP} and
+calls for systematic energy and carbon reporting boundaries
+\cite{HendersonEtAl2020EnergyReporting}. Deployment-time inference is itself a
+substantial and workload-dependent energy source
+\cite{LuccioniEtAl2024PowerHungry}. Zeus demonstrates energy--time Pareto reasoning
+for GPU workloads \cite{YouEtAl2023Zeus}, although its primary setting is training.
+
+Our measurement uses NVIDIA Management Library board-power queries
+\cite{NVIDIA2026NVML} and trapezoidal integration. The quantity does not include
+the host, CPU retrieval, storage, network, or cooling, and it is not converted to
+carbon. This narrower claim improves reproducibility but also limits what the
+energy results can establish.

@@ -1,0 +1,91 @@
+\section{HybridBench: Controlled Evidence and Memory Tasks}
+\label{sec:benchmark}
+
+\subsection{Design Objective}
+
+\bench{} is designed for mechanism identification, not for estimating open-domain
+QA performance. Its answers are opaque facts sampled independently of task class
+and split. A model therefore cannot solve an evidence-required item from world
+knowledge, and a task-only majority rule cannot exploit a fixed answer. The
+generator is deterministic and does not call an LLM during dataset construction.
+
+Each of the 800 scenario groups creates a project identifier, a direct-copy token,
+a dataset alias, a private label, an optimizer, scheduler, seed, batch-size update,
+and an authority conflict. It emits seven knowledge documents: a current optimizer
+specification, old and new batch-size revisions, approved and unofficial
+learning-rate records, a project-to-dataset alias, and a dataset-to-scheduler
+record. It also emits three memory events: a chosen seed, a private label, and a
+tombstone deleting that label. Tombstoned events are removed from active retrieval.
+Every query is associated with the exact required and forbidden evidence IDs.
+
+\subsection{Eight Task Classes}
+
+The benchmark contains 100 scenarios in each class:
+
+\begin{enumerate}
+    \item \emph{no retrieval}: reproduce an opaque token supplied in the question;
+    \item \emph{knowledge only}: recover the optimizer from an official document;
+    \item \emph{memory only}: recover a previously selected seed;
+    \item \emph{knowledge plus memory}: compose optimizer and seed;
+    \item \emph{temporal update}: prefer the newest approved batch size;
+    \item \emph{authority conflict}: prefer a signed high-authority record over a
+    newer unofficial note;
+    \item \emph{two-hop hybrid}: traverse project $\rightarrow$ dataset alias
+    $\rightarrow$ scheduler;
+    \item \emph{deleted or missing}: abstain because the relevant private fact was
+    tombstoned and is not valid evidence.
+\end{enumerate}
+
+The classes separate evidence availability from evidence resolution. For example,
+temporal and authority tasks require a model to select among plausible conflicting
+records, whereas the deletion task requires it to avoid both retrieval and
+citation of forbidden state.
+
+\subsection{Grouped Splits and Leakage Controls}
+
+Scenario groups are partitioned 10\%/50\%/15\%/10\%/15\% into pilot, train,
+calibration, validation, and sealed test, respectively. This yields 80 pilot, 400
+train, 120 calibration, 80 validation, and 120 test questions, with 15 test
+questions per task class. A scenario ID appears in exactly one split. Each
+task--split pair uses a distinct template family, and temporal/entity histories
+remain inside the group.
+
+The leakage audit rejects cross-split scenario overlap, template-family overlap,
+exact normalized duplicates, and question-shingle Jaccard similarity at or above
+0.95. Facts are randomly sampled instead of cycled by task or split. As a
+construction sanity check, a task-only predictor formed from train-set answer
+majorities answered 21 of the 90 evidence-requiring test items (23.33\%), below the
+frozen 45\% rejection threshold. Pilot outcomes alone may remove infeasible
+non-anchor routes. Router models use train outcomes; isotonic calibration uses the
+calibration split; threshold and safe-route selection use validation. Test answer
+fields and evidence labels remain procedurally sealed until the policy, thresholds,
+and analysis plan are frozen. Because collaborators share the dataset credential,
+this is a procedural seal and not a cryptographic access-control claim.
+
+\subsection{Strict Outcome Contract}
+
+Model output must parse as a JSON-like object with an answer, a list of exact
+evidence IDs, and an abstention flag. Let $F_i$ be token F1 between the predicted
+and expected answer, $R_i$ required-evidence citation recall, $P_i$ citation
+precision, $A_i$ agreement with the required abstention decision, and $V_i$ an
+indicator for a parseable output with no citation outside the retrieved set and no
+forbidden evidence. Strict success is
+
+\begin{equation}
+\begin{aligned}
+S_i=\mathbb{1}\!\big[&F_i\geq0.8 \land R_i=1 \land P_i=1 \\
+                     &{}\land A_i=1 \land V_i=1\big].
+\end{aligned}
+\label{eq:strict-success}
+\end{equation}
+
+For tasks without required evidence, recall is one and precision is one only when
+the citation set is empty. For the deleted/missing class, a correct abstention or
+an explicit insufficient-evidence answer receives answer credit, but exposure of a
+tombstoned ID fails the guard. The auxiliary score
+$0.75F_i+0.25R_i$ is retained for diagnosis; it does not replace
+Eq.~\eqref{eq:strict-success} in any primary analysis.
+
+This contract is intentionally stricter than exact-answer accuracy. It distinguishes
+three failure layers: output parsing, answer content, and evidence support. It also
+prevents a fluent unsupported answer from counting as success.

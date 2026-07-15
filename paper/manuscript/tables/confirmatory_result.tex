@@ -1,0 +1,25 @@
+\begin{table}[t]
+\caption{Confirmatory policy result on the sealed test split ($n=120$). Intervals are 95\% scenario-cluster bootstrap intervals.}
+\label{tab:confirmatory}
+\centering
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+Quantity & Result \\
+\midrule
+Selected route & A03 for all queries \\
+Strict success & 0.0\% [0.0, 0.0] \\
+Generation-window GPU energy & 143.16 J/query \\
+Energy interval & [138.14, 148.07] J \\
+Policy latency component sum & 3.76 s/query \\
+Abstention / execution coverage & 15.0\% / 100.0\% \\
+Policy $-$ baseline success & 0.0 pp \\
+Policy $-$ baseline energy & 0.00 J/query \\
+\midrule
+Quality non-inferiority & pass \\
+Energy reduction & \textbf{fail} \\
+Operating constraints & pass \\
+Joint confirmatory hypothesis & \textbf{fail} \\
+\bottomrule
+\end{tabular}
+\end{table}

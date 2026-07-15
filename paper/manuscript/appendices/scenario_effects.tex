@@ -1,0 +1,26 @@
+\section{Scenario-Specific Grounding Effects}
+\label{app:scenario-effects}
+
+Table~\ref{tab:scenario-effects} expands the aggregate matched effects into the
+eight 15-query test strata. It shows why an always-grounded average must not be
+interpreted as the conditional effect of retrieval when retrieval is required.
+
+\begin{table*}[t]
+\caption{Direct $\rightarrow$ grounded strict success by task class (\%). NR: no
+retrieval; KO: knowledge only; MO: memory only; KM: knowledge plus memory; TU:
+temporal update; AC: authority conflict; MH: multi-hop; DM: deleted/missing.}
+\label{tab:scenario-effects}
+\centering
+\scriptsize
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+Generator & NR & KO & MO & KM & TU & AC & MH & DM \\
+\midrule
+Qwen3 0.6B & 100$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 \\
+Granite 4.0 1B & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 & 0$\rightarrow$0 \\
+Granite 4.1 3B & 66.7$\rightarrow$0 & 0$\rightarrow$93.3 & 0$\rightarrow$100 & 0$\rightarrow$20.0 & 0$\rightarrow$100 & 0$\rightarrow$40.0 & 0$\rightarrow$0 & 100$\rightarrow$0 \\
+SmolLM3 3B & 86.7$\rightarrow$0 & 0$\rightarrow$20.0 & 0$\rightarrow$100 & 0$\rightarrow$13.3 & 0$\rightarrow$93.3 & 0$\rightarrow$33.3 & 0$\rightarrow$0 & 100$\rightarrow$13.3 \\
+Qwen3 4B & 6.7$\rightarrow$0 & 0$\rightarrow$93.3 & 0$\rightarrow$66.7 & 0$\rightarrow$13.3 & 0$\rightarrow$100 & 0$\rightarrow$40.0 & 0$\rightarrow$26.7 & 100$\rightarrow$0 \\
+\bottomrule
+\end{tabular}
+\end{table*}

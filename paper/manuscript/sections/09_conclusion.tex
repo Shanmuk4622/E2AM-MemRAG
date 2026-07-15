@@ -1,0 +1,26 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+\system{} tested a simple but frequently skipped premise: before routing among RAG
+and memory actions, do those actions produce generator-specific, support-qualified
+quality separation at a measurable cost? In the frozen benchmark, the answer was
+mixed. An identical grounded route materially improved Granite-4.1-3B and Qwen3-4B,
+had an uncertain positive effect for SmolLM3, removed the only successful direct
+stratum for Qwen3-0.6B, and exposed a deterministic integration failure for
+Granite-4.0-1B. Every grounded endpoint had a higher observed generation-window
+GPU-board energy mean, with four matched pairs measured on the same board.
+
+The router consequently had no validation-feasible operating point. Its disclosed
+fail-closed policy used the same fallback for every test query, achieved zero strict
+success, and reduced energy by exactly zero; the confirmatory hypothesis failed.
+This negative result is more useful than an optimistic aggregate. It identifies
+route viability, interface compliance, task-conditioned grounding value, precise
+measurement boundaries, and nonzero clean utility as prerequisites for credible
+energy-aware RAG routing.
+
+Future work should repair model-specific interfaces under a new frozen specification,
+add public and long-context benchmarks, measure whole-system energy with repeated
+interleaved runs, and train a router only after its calibration split demonstrates
+a feasible operating point and query-dependent separation among compatible routes.
+Until then, retrieval and memory should be treated as generator-dependent
+interventions whose value must be measured, not assumed.

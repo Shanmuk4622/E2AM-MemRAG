@@ -1,0 +1,63 @@
+\section{Scoring and Router Contract}
+\label{app:scoring}
+
+\subsection{Token and Citation Metrics}
+
+Let $n_t^{\hat y}$ and $n_t^y$ denote predicted and target token counts. Answer
+precision, recall, and F1 are
+
+\begin{align}
+P_{\mathrm{ans}} &=
+\frac{\sum_t\min(n_t^{\hat y},n_t^y)}{|T_{\hat y}|}, \\
+R_{\mathrm{ans}} &=
+\frac{\sum_t\min(n_t^{\hat y},n_t^y)}{|T_y|}, \\
+F_1 &= \frac{2P_{\mathrm{ans}}R_{\mathrm{ans}}}
+{P_{\mathrm{ans}}+R_{\mathrm{ans}}}.
+\end{align}
+
+For required IDs $R_q$ and cited IDs $C_{qr}$,
+
+\begin{equation}
+R_{\mathrm{cite}}=\frac{|C_{qr}\cap R_q|}{|R_q|},\qquad
+P_{\mathrm{cite}}=\frac{|C_{qr}\cap R_q|}{|C_{qr}|}.
+\end{equation}
+
+Recall is one when no evidence is required. Precision for an empty citation set is
+one only when no evidence is required. Strict success additionally requires
+$C_{qr}\subseteq G_{qr}$ for retrieved IDs $G_{qr}$ and
+$F_q\cap(C_{qr}\cup G_{qr})=\varnothing$ for forbidden IDs $F_q$.
+
+\subsection{Router Features and Hyperparameters}
+
+The eight query-only features are token count, character count, digit count,
+entity-code count, temporal-term count, conflict-term count, memory-term count, and
+multi-hop-term count. The eight probe features are document top score, document
+score gap, document count, memory top score, memory score gap, memory count,
+maximum authority, and authority range.
+
+Each bootstrap model uses histogram gradient boosting with learning rate 0.06,
+180 iterations, at most 15 leaves, and $L_2=1$. Success is calibrated by isotonic
+regression; energy and latency use 0.90-quantile loss on log outcomes. Bootstrap
+seeds are 4622, 1701, 31415, 27182, and 65537.
+
+\subsection{Validation Amendment Record}
+
+The frozen policy records the following non-negotiable fields:
+
+\begin{itemize}
+    \item amendment ID:
+    \modelid{stage06-threshold-completion-separation-v1};
+    \item timing: after validation, before test access;
+    \item validation feasible: false;
+    \item selected threshold: $\tau=1.0$;
+    \item selection mode:
+    \modelid{fail-closed-tau-1.0-validation-infeasible};
+    \item positive hypothesis claim permitted: false.
+\end{itemize}
+
+Every tested threshold from 0.60 to 1.00 had 8.75\% validation success, 100\%
+execution coverage, and 18.75\% abstention. The frozen policy file has SHA-256
+\artifactid{fda2bda0\allowbreak a7152271\allowbreak 62ceead0\allowbreak
+ff032f22\allowbreak 28999f6d\allowbreak c9f4bb22\allowbreak 890ec23a\allowbreak
+4acdab14}
+in the Stage-06 manifest.

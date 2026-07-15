@@ -223,7 +223,7 @@ def svg_route_scatter(routes: list[dict[str, Any]]) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
         '<rect width="100%" height="100%" fill="white"/>',
         '<style>text{font-family:Arial,sans-serif;fill:#172033}.axis{stroke:#172033;stroke-width:1.4}.grid{stroke:#dfe5ee;stroke-width:1}.label{font-size:12px}.title{font-size:22px;font-weight:700}.tick{font-size:12px}.note{font-size:13px;fill:#526071}</style>',
-        '<text class="title" x="600" y="29" text-anchor="middle">Clean-test route quality-energy frontier</text>',
+        '<text class="title" x="600" y="29" text-anchor="middle">Clean-test quality versus generation-window GPU energy</text>',
         '<circle cx="825" cy="48" r="6" fill="#1c7c54"/><text class="note" x="837" y="52">non-zero success</text>',
         '<circle cx="960" cy="48" r="6" fill="#9aa5b1"/><text class="note" x="972" y="52">zero success</text>',
         '<circle cx="1075" cy="48" r="6" fill="#c43d3d"/><text class="note" x="1087" y="52">selected policy</text>',
@@ -240,7 +240,7 @@ def svg_route_scatter(routes: list[dict[str, Any]]) -> str:
         [
             f'<line class="axis" x1="{left}" y1="{top + plot_h}" x2="{left + plot_w}" y2="{top + plot_h}"/>',
             f'<line class="axis" x1="{left}" y1="{top}" x2="{left}" y2="{top + plot_h}"/>',
-            f'<text x="{left + plot_w / 2}" y="{height - 30}" text-anchor="middle">Mean selected-GPU energy (J/query)</text>',
+            f'<text x="{left + plot_w / 2}" y="{height - 30}" text-anchor="middle">Mean generation-window GPU-board energy (J/query)</text>',
             f'<text transform="translate(25 {top + plot_h / 2}) rotate(-90)" text-anchor="middle">Strict support-qualified success rate</text>',
         ]
     )
@@ -577,11 +577,12 @@ The strongest paper is a controlled negative-result and systems-diagnosis study:
 **energy-aware routing fails when lightweight generator/grounding combinations do
 not produce separable strict-success signal, while grounding benefits remain
 strongly generator-dependent.** The contribution is the frozen benchmark,
-end-to-end energy accounting, calibrated routing protocol, and failure analysis--
+generation-window GPU-board energy accounting, calibrated routing protocol, and failure analysis--
 not a claim that the learned policy reduced energy.
 
-Claims must remain bounded to this controlled synthetic benchmark, one T4,
-selected-GPU board energy, the frozen model revisions, and strict
+Claims must remain bounded to this controlled synthetic benchmark, one visible T4
+per worker (four physical boards across clean lanes), selected-GPU board energy,
+the frozen model revisions, and strict
 support-qualified success. Carbon, whole-system energy, public-benchmark SOTA,
 and broad real-world generalization are outside the evidence.
 
@@ -605,14 +606,17 @@ and broad real-world generalization are outside the evidence.
         "best_clean_route": best_route,
         "grounded_pareto_frontier_model_keys": sorted(frontier),
         "trace_audit": trace_audits,
-        "claim_boundary": "controlled synthetic benchmark; selected-GPU board energy; one T4",
+        "claim_boundary": "controlled synthetic benchmark; one visible T4 per worker; four clean-lane boards; generation-window selected-GPU board energy",
         "provenance": provenance,
     }
     (DERIVED / "results_summary.json").write_text(canonical_json(result_summary), encoding="utf-8")
 
     generated = sorted(
         path for path in PAPER.rglob("*")
-        if path.is_file() and path.name != "RESULTS_MANIFEST.json"
+        if path.is_file()
+        and path.name != "RESULTS_MANIFEST.json"
+        and "manuscript/build" not in path.relative_to(PAPER).as_posix()
+        and "__pycache__" not in path.parts
     )
     manifest = {
         "schema_version": 1,

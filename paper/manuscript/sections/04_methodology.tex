@@ -1,0 +1,119 @@
+\section{E2AM-MemRAG Methodology}
+\label{sec:methodology}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{system_overview.png}
+    \caption{Experimental pipeline and measurement boundary. The red dashed region
+    is the only interval included in reported GPU energy. CPU retrieval and
+    post-generation checking are not assigned an energy value.}
+    \label{fig:system}
+\end{figure*}
+
+\subsection{Frozen Model Panel}
+
+Table~\ref{tab:model-panel} lists the five generators. Exact repository commits
+are frozen to prevent upstream changes during parallel execution. Qwen3-0.6B and
+Granite-4.0-1B form the deployable online pair; they must coexist on a single T4
+without CPU/disk offload and leave at least 15\% free VRAM. Granite-4.1-3B,
+SmolLM3-3B, and Qwen3-4B are sequential reference models and are never router
+actions. References are loaded alone and unloaded before the online pair is
+restored. The model families are documented by their technical reports or exact
+model cards \cite{QwenTeam2025Qwen3,QwenModelCard06,QwenModelCard4B,
+GraniteTeam2025Granite40,GraniteTeam2026Granite41,BakouchEtAl2025SmolLM3}.
+
+All models use FP16, deterministic greedy decoding (\texttt{do\_sample=False}), a
+maximum of 80 new tokens, and a 1,536-token context budget. Thinking is disabled
+for checkpoints that expose that template option. A context overflow or OOM is
+recorded as failure; the runtime does not silently alter precision, batch size,
+context, or device placement.
+
+\input{tables/model_panel}
+
+\subsection{Retrieval and Memory Mechanisms}
+
+The sparse index implements BM25 with $k_1=1.5$ and $b=0.75$. Dense retrieval uses
+the pinned \modelid{sentence-transformers/all-MiniLM-L6-v2} checkpoint with explicit
+attention-mask mean pooling and $\ell_2$ normalization on CPU. Dot product ranks
+the normalized embeddings. Hybrid knowledge retrieval applies reciprocal-rank
+fusion (RRF),
+
+\begin{equation}
+\operatorname{RRF}(d)=\sum_{m\in\{\mathrm{BM25},\mathrm{dense}\}}
+\frac{1}{60+r_m(d)},
+\label{eq:rrf}
+\end{equation}
+
+then expands only dataset aliases observed in the strongest first-hop evidence.
+The final evidence budget remains $k=4$; the second hop cannot widen the context.
+
+Memory uses the same sparse and dense signals. A flat route returns dense neighbors.
+The hierarchical route fuses rankings and retains the newest active event per
+entity. The graph/temporal route expands entity-linked history, removes tombstoned
+events, and ranks valid timestamps ahead of missing or malformed ones, followed by
+relevance and a deterministic ID tie-break. These mechanisms test organization and
+recency; they are not claimed as new learned memory architectures.
+
+\subsection{Route Matrix and Evidence Guard}
+
+Twenty-two routes were declared. A00--A15 span direct, sparse, dense, hybrid,
+flat-memory, hierarchical-memory, graph-memory, combined, and evidence-guarded
+mechanisms. M16--M21 complete the five-model matched panel. Pilot-only pruning
+removed A05--A07, A11, and A15; all ten direct/grounded endpoints remained mandatory.
+The sealed clean matrix therefore contains 17 routes $\times$ 120 questions.
+
+The matched grounded route is logically identical across generators: bounded
+hybrid knowledge, graph/temporal memory, the same evidence budget, and a deterministic
+guard. After generation, the guard rejects citations outside the retrieved set and
+rejects a retrieved-context answer that supplies no citation. A rejection is
+converted to an insufficient-evidence abstention before strict scoring. This is a
+syntactic and set-membership guard, not an LLM entailment judge.
+
+\subsection{Generation-Window GPU-Energy Measurement}
+
+Immediately before \texttt{model.generate()}, CUDA is synchronized and an NVML
+sampler starts at a 0.05-s interval. After generation, CUDA is synchronized again
+and sampling stops. One route-specific warm-up execution absorbs model loading and
+tokenizer initialization and is discarded before canonical rows are measured. No
+idle-power subtraction is applied. Given board-power samples $(t_j,P_j)$, energy is estimated by
+trapezoidal integration,
+
+\begin{equation}
+E_i=\sum_{j=1}^{n_i-1}\frac{P_j+P_{j+1}}{2}(t_{j+1}-t_j).
+\label{eq:energy}
+\end{equation}
+
+At least two samples and a valid GPU UUID are required. Missing or non-finite
+energy blocks release-level inference rather than disappearing from a mean. Hub
+uploads occur outside the measured block.
+
+Equation~\eqref{eq:energy} measures the selected board during generation only.
+Dense encoding and retrieval run on CPU; prompt construction, parsing, evidence
+verification, and scoring are outside the energy window. Route latency is retrieval
+time plus the duration of the generator call. Policy latency adds the separately
+timed query/probe router components. Neither quantity is labeled whole-system
+energy, full end-to-end energy, or carbon.
+
+\subsection{Two-Stage Calibrated Router}
+
+The router considers only pilot-retained online routes. Stage 0 uses eight
+query-available features, including length, token/number counts, temporal/conflict
+terms, and memory cues, to score direct actions. If none clears the constraints,
+one charged BM25/memory-metadata probe supplies eight retrieval features such as
+top scores, score gaps, counts, authority, and recency. Stage 1 scores non-direct
+actions and otherwise chooses the validation-selected safe route.
+
+For each of five grouped bootstrap seeds, a histogram gradient-boosting classifier
+predicts success. Isotonic regression calibrates it on the calibration split.
+Separate histogram gradient-boosting regressors predict log energy and log latency
+with quantile loss at $q=0.90$. For action $a$, the conservative success estimate
+is the minimum calibrated probability across seeds,
+
+\begin{equation}
+\underline p_a(x)=\min_{b\in\{1,\ldots,5\}}\widehat p_{a,b}^{\mathrm{cal}}(x),
+\end{equation}
+
+while cost estimates are seed means of exponentiated quantile predictions. Among
+actions satisfying $\underline p_a(x)\geq\tau$ and predicted latency at most 12 s,
+the controller chooses the lowest predicted generation-window GPU energy. Reference
+models are excluded even when they lie on the offline Pareto frontier.

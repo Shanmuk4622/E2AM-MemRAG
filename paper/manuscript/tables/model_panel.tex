@@ -1,0 +1,17 @@
+\begin{table*}[t]
+\caption{Frozen generator panel and matched direct/grounded endpoints. Only the first two model families were eligible for online routing. All checkpoints were loaded in FP16 at immutable revisions.}
+\label{tab:model-panel}
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lXlll@{}}
+\toprule
+Role & Frozen repository (revision prefix) & Direct & Grounded/verified & Router eligible \\
+\midrule
+Tiny & \texttt{Qwen/Qwen3-0.6B} (\texttt{c1899de}) & A00 & M16 & yes \\
+Small & \texttt{ibm-granite/granite-4.0-1b} (\texttt{6a7381b}) & A04 & A13 & yes \\
+Granite reference & \texttt{ibm-granite/granite-4.1-3b} (\texttt{c065040}) & M17 & M18 & no \\
+Peer reference & \texttt{HuggingFaceTB/SmolLM3-3B} (\texttt{a07cc9a}) & M19 & M20 & no \\
+Upper reference & \texttt{Qwen/Qwen3-4B-Instruct-2507} (\texttt{cdbee75}) & M21 & A14 & no \\
+\bottomrule
+\end{tabularx}
+\end{table*}

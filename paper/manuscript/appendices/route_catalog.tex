@@ -1,0 +1,16 @@
+\section{Complete Route Catalog and Hardware Assignment}
+\label{app:routes}
+
+Table~\ref{tab:route-catalog} reports every predeclared route and identifies the 17
+retained clean-test routes. ``Retained'' does not mean ``best'': all matched model
+anchors were mandatory even when pilot quality was weak. The route ID prefix is a
+stable experimental identifier, not a rank.
+
+\input{tables/route_catalog}
+
+Table~\ref{tab:hardware} anonymizes the physical board UUIDs while preserving
+comparability structure. Routes sharing an alias used the same T4. Separate
+robustness conditions were executed on separate boards and are not included in
+cross-condition energy comparisons.
+
+\input{tables/hardware_assignment}

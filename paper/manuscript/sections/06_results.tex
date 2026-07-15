@@ -1,0 +1,155 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Release Integrity}
+
+The experiment completed and the release passed a fresh-root restore. All 11
+Stage-09 artifacts matched their declared SHA-256 hashes and byte counts. The clean
+set contains 2,040 unique units and the robustness set 1,440; both have zero
+duplicate IDs, divergent route hashes, non-finite audited values, or execution
+failures. Generation-window energy coverage is 100\% in both sets
+(Table~\ref{tab:trace-integrity}). Thus the negative outcome is not attributable to
+missing runs or telemetry filtering.
+
+\input{tables/trace_integrity}
+
+Across all clean routes, 58.38\% of outputs parsed, 19.41\% passed the answer check,
+18.04\% passed the support guard, and 11.23\% met every strict condition. These
+aggregate rates are diagnostic rather than model-weighted benchmark scores because
+the route matrix deliberately repeats every question under many mechanisms.
+
+\subsection{Confirmatory Router Outcome}
+
+\input{tables/confirmatory_result}
+
+The frozen policy invoked A03 for all 120 questions. Its strict success was 0\%
+(
+\ci{} [0, 0]), mean generation-window GPU energy was 143.16 J/query
+([138.14, 148.07]), and the summed policy-latency components averaged 3.760 s/query
+([3.652, 3.863]). Execution coverage was 100\% and abstention 15\%.
+
+The fixed baseline was also A03. Consequently, both paired differences were exactly
+zero: $\Delta_S=0$ and $\Delta_E=0$ with degenerate intervals. The formal relative
+quality and operating gates passed, but the upper energy bound was not below zero.
+The joint hypothesis therefore failed. The quality result is floor equivalence,
+not preservation of useful quality.
+
+Test confidence occupied a single 0--0.1 bin, with mean 0.00937, Brier score
+$8.79\times10^{-5}$, and 10-bin ECE 0.00937. Because every selected outcome was
+zero, these small errors indicate a correctly pessimistic but non-discriminating
+policy; they are not evidence of broadly effective calibration.
+
+\subsection{Route-Level Quality--Energy Structure}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.93\textwidth]{route_quality_energy.png}
+    \caption{Strict success versus generation-window selected-GPU board energy for
+    the 17 retained clean routes. Offline reference routes provide the best
+    quality points but were not eligible router actions. Cross-board comparisons
+    are descriptive; Table~\ref{tab:hardware} gives route assignment.}
+    \label{fig:route-scatter}
+\end{figure*}
+
+\input{tables/route_highlights}
+
+Figure~\ref{fig:route-scatter} shows that the best route was the offline
+Granite-4.1-3B grounded endpoint M18: 44.17\% success at 176.68 J/query and 2.647-s
+median route latency. The grounded Qwen3-4B reference A14 achieved 42.50\% at
+256.13 J, while grounded SmolLM3 M20 achieved 34.17\% at 148.93 J. Among direct
+references, M19 reached 23.33\%, M17 20.83\%, and M21 13.33\%. The only nonzero
+online tiny/small direct endpoint was A00 at 12.50\% and 54.71 J.
+
+The grounded Pareto designation in the release applies only to the five grounded
+model endpoints in success--energy--latency space; it identifies the Granite-4.1-3B
+and SmolLM3 families. It is not a global frontier over all 17 routes, and the best
+grounded points were not deployable policy actions.
+
+\subsection{Generator-Dependent Grounding}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.94\textwidth]{grounding_effect_forest.png}
+    \caption{Matched grounded-minus-direct strict-success effects. Filled markers
+    denote intervals that exclude zero; the open SmolLM3 marker spans zero. The
+    energy column reports the paired generation-window GPU-energy increase. The
+    Granite-4.0-1B energy pair is cross-board and descriptive.}
+    \label{fig:grounding-forest}
+\end{figure*}
+
+\input{tables/model_transfer}
+
+The matched panel in Fig.~\ref{fig:grounding-forest} and
+Table~\ref{tab:model-transfer} rejects a model-independent account of grounding.
+Within the equal eight-task mixture, Qwen3-0.6B changed from 12.50\% direct success
+to zero grounded success ($-12.50$ \pp{}, interval $[-18.33,-6.67]$). That aggregate
+loss came entirely from the no-retrieval stratum: A00 copied all 15 supplied tokens,
+whereas M16 copied none. Both routes already scored zero on every evidence-required
+stratum. It is therefore inaccurate to claim that RAG reduced this model's success
+on questions that needed evidence; the experiment instead shows that an
+always-grounded policy destroyed its one functioning direct behavior without
+creating evidence-task success.
+
+Granite-4.1-3B improved from 20.83\% to 44.17\% ($+23.33$ \pp{}, [10.00, 37.50]),
+and Qwen3-4B improved from 13.33\% to 42.50\% ($+29.17$ \pp{}, [16.67, 41.67]).
+SmolLM3 increased from 23.33\% to 34.17\%, but its interval
+$[-2.50,24.17]$ includes zero. Positive aggregate effects arose mainly from
+knowledge, memory, temporal-update, and authority-conflict tasks. The same grounded
+route frequently lost direct-route successes on no-retrieval and deleted/missing
+tasks. Hence the estimand is ``always grounded minus always direct'' under the
+frozen equal task mixture, not the benefit of retrieving only when retrieval is
+needed.
+
+All five grounded endpoints had higher observed generation-window GPU energy. The
+same-board increases were 146.72 J for Qwen3-0.6B, 119.53 J for Granite-4.1-3B,
+41.52 J for SmolLM3, and 171.71 J for Qwen3-4B. Grounding also increased mean input
+tokens substantially: for example, Granite-4.1-3B rose from 128.1 to 627.8 tokens,
+and Qwen3-4B from 128.4 to 760.0. These are per-assigned-query effects under the
+frozen prompts, not intrinsic or token-normalized model-efficiency rankings.
+
+\subsection{The Granite-4.0-1B Compatibility Failure}
+
+Granite-4.0-1B scored zero both directly and grounded. Inspection of all clean A04,
+A12, and A13 rows showed an identical 80-character sequence of exclamation marks;
+every output reached the 80-token ceiling and none parsed. The A04 and A13 energy
+endpoints also ran on different T4 boards. We therefore treat this pair as an
+observed frozen prompt/chat-template/runtime incompatibility. It removed one
+candidate from the useful online pool, but neither explains the policy-level
+calibration infeasibility by itself nor shows that the model family is generally
+incapable of RAG.
+
+\subsection{Retrieval, Memory, and Failure Layers}
+
+On the same board, A00 achieved 12.5\% while tiny BM25, dense, and hybrid routes
+each achieved zero. Their measured energy increases were 102.97, 95.70, and
+88.44 J/query, respectively, with intervals excluding zero. Again, the success
+difference is the loss of no-retrieval cases rather than a decline from positive
+evidence-task performance.
+
+Tiny flat, hierarchical, and graph-memory routes also scored zero and showed
+larger energy means than A00, but they ran on a different board; those energy
+differences are descriptive. Across the common grounded route, retrieval recovered
+the complete required evidence for most evidence-requiring queries, yet success
+remained generator-dependent. For example, two-hop evidence was frequently
+retrieved while Granite-4.1-3B and SmolLM3 still obtained zero strict success on
+that class. Retrieval completeness was therefore necessary but not sufficient.
+
+Failure decomposition reinforces this point. M18 parsed 96.67\% of outputs,
+passed the support guard on 74.17\%, and succeeded on 44.17\%. M20 parsed 100\%,
+passed support on 55.83\%, and succeeded on 34.17\%. A14 parsed 84.17\%, passed
+support on 67.50\%, and succeeded on 42.50\%. In contrast, A03 parsed 46.67\% but
+had zero support-qualified outputs. Sixty-four A03 outputs failed parsing and 40
+contained citation representations that did not satisfy exact ID membership. The
+frozen interface contract, not retrieval alone, was a major bottleneck.
+
+\subsection{Robustness Is a Floor Effect}
+
+\input{tables/robustness}
+
+The selected policy used A03 for every query under all four corruptions and achieved
+zero strict success, matching its clean zero. The resulting zero degradation is
+uninformative: it reflects a floor, not retained capability. A00 remained at 12.5\%
+because it ignores evidence, while A13 remained at zero because of the compatibility
+failure. The synthetic compromise marker was never emitted, but a zero marker rate
+alongside zero policy efficacy cannot support a broad prompt-injection robustness
+claim.

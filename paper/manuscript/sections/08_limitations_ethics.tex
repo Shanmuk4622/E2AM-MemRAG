@@ -1,0 +1,75 @@
+\section{Limitations, Reproducibility, and Ethics}
+\label{sec:limitations}
+
+\subsection{External Validity}
+
+\bench{} is synthetic and controlled. Its opaque answers and exact evidence IDs
+support mechanism diagnosis, but they do not estimate performance on public QA,
+long-document memory, conversational personalization, or production traffic. The
+equal eight-task mixture is a design choice, and each class contains only 15 test
+scenarios. Model ranks and average grounding effects may change under another task
+distribution, prompt, context budget, or verifier.
+
+Only one deterministic generation was collected per route--question pair under
+one experiment seed. Bootstrap intervals resample questions; they do not quantify
+decoding variance, repeated-run variance, or hardware measurement uncertainty.
+Secondary intervals were not multiplicity-corrected. The policy evaluation replays
+a complete frozen query-by-route matrix rather than conducting an independent
+prospective online deployment.
+
+\subsection{Measurement and Hardware Limits}
+
+The energy endpoint covers only selected-board power during generation. It excludes
+CPU retrieval and memory work, routing, parsing, verification, indexing, model
+loading, uploads, host idle power, network, and cooling. No idle-power subtraction,
+whole-system measurement, token-normalized efficiency, or carbon conversion is
+reported. Four T4 boards were used for clean lanes, route order was route-major,
+and routes were not randomized or interleaved. Board, session, thermal, and model
+residency effects may therefore confound cross-lane and cross-model energy
+comparisons. The Granite-4.0-1B matched endpoints are explicitly cross-board.
+
+\subsection{Model and Interface Limits}
+
+Different model families use different tokenizers and chat templates. Reference
+models ran sequentially alone, whereas online tiny/small routes were evaluated
+under the resident-pair contract. Input and output token counts differ substantially,
+so this is not an intrinsic architecture-efficiency leaderboard. The frozen
+Granite-4.0-1B integration emitted a repeated 80-token sequence and is an observed
+compatibility failure, not a general assessment of the checkpoint.
+
+The citation guard checks syntax and set membership, not semantic entailment.
+Exact-ID parsing may reject a value whose intended evidence a human could infer.
+Conversely, a correctly formatted citation can pass the guard without proving that
+the natural-language claim is semantically entailed beyond this generated benchmark.
+
+\subsection{Protocol and Robustness Limits}
+
+The Stage-06 threshold amendment occurred after validation infeasibility was known
+but before test-label access. It is fully disclosed and prohibits a positive router
+claim, yet it remains a deviation from the original implementation path. Five
+nonanchor routes were pilot-pruned. The test-label seal is procedural because
+collaborators shared repository access, not a cryptographic guarantee.
+
+The robustness study covers only three deployable anchors and four synthetic
+corruptions. The selected policy and grounded small-model anchor had zero clean
+success, creating floor effects. The compromise flag detects a known literal marker
+and should not be generalized to unseen prompt-injection strategies.
+
+\subsection{Ethics and Environmental Claims}
+
+The benchmark is programmatically generated and contains no personal information.
+Memory records are synthetic, and the deletion task exists to test exclusion of a
+tombstoned identifier. The work does not estimate carbon emissions, avoided
+emissions, or environmental impact. Such claims would require a broader energy
+boundary, location- and time-specific electricity data, and a documented allocation
+method. The responsible interpretation is limited to measured T4 generation-window
+board energy within the frozen experiment.
+
+\subsection{Artifact Availability}
+
+The source repository contains the notebook builders, execution notebooks, exact
+analysis code, LaTeX sources, derived tables, and figures. The results package pins
+the Hugging Face release commit, includes 11 checksum-verified Stage-09 artifacts,
+and records the frozen specification digest. If the dataset repository remains
+private during review, artifacts must be supplied through an anonymous or
+reviewer-accessible archive; the manuscript does not assume public visibility.

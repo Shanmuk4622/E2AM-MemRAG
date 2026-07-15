@@ -1,0 +1,46 @@
+\section{Reproducibility and Artifact Manifest}
+\label{app:reproducibility}
+
+\subsection{Frozen Counts and Identifiers}
+
+The release identifier is \modelid{e2am-memrag-v3r1}; the execution-spec SHA-256
+is \artifactid{1c8f29fd\allowbreak 250b87d3\allowbreak 546c6ff3\allowbreak
+d128dc3f\allowbreak e6600bc7\allowbreak 98c3c0b0\allowbreak b8c98e0b\allowbreak
+95c76cfc}.
+The visible Hugging Face release commit is
+\artifactid{0b2405d9\allowbreak cca43fd0\allowbreak 4e35f792\allowbreak
+fdc46644\allowbreak 05154fc6}; the paper-release branch commit is
+\artifactid{00fa353f\allowbreak 273f3a4b\allowbreak 3d57a0b9\allowbreak
+98301c85\allowbreak a1bc098b}. Eleven Stage-09 artifacts totaling
+11,528,142 bytes passed byte and SHA-256 verification.
+
+The benchmark contains 5,600 documents and 2,400 memory events across 800 scenario
+groups. After tombstone processing, one selected-seed memory per scenario remains
+active. The clean release contains 17 routes, 120 query IDs, and 2,040 rows; the
+robustness release contains three routes, four conditions, 120 query IDs, and 1,440
+rows.
+
+\subsection{Rebuild Procedure}
+
+The repository script \path{scripts/build_manuscript_assets.py} reads only the
+checksum-verified release and deterministically regenerates manuscript CSVs, tables,
+and vector figures. \path{scripts/validate_manuscript.py} checks numeric claims,
+bibliography keys, references, measurement-boundary language, artifact existence,
+and protocol-amendment disclosure. The complete source is compiled with Tectonic
+0.16.9 using \path{paper/manuscript/main.tex}; the same sources are compatible
+with Overleaf/pdfLaTeX.
+
+\subsection{Availability}
+
+Code and paper sources are hosted at
+\url{https://github.com/Shanmuk4622/E2AM-MemRAG}. Frozen traces reside in the
+Hugging Face dataset \path{Shanmuk4622/E2AM-MemRAG-Traces}. Repository visibility
+must be checked at submission time. If the trace repository is not public, the
+authors should provide a checksum-identical anonymous archive or grant reviewer
+access rather than claiming unrestricted availability.
+
+\subsection{Author Contribution and Conflicts}
+
+Shanmukesh Bonala conceived the study, implemented the benchmark and pipeline,
+executed and audited the experiments, analyzed the data, and wrote the manuscript.
+The author declares no competing interests and no external funding for this study.

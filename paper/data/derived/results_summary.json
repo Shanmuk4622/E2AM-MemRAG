@@ -8,7 +8,7 @@
     "route_id": "M18_granite_grounded_verified",
     "success_rate": 0.44166666666666665
   },
-  "claim_boundary": "controlled synthetic benchmark; selected-GPU board energy; one T4",
+  "claim_boundary": "controlled synthetic benchmark; one visible T4 per worker; four clean-lane boards; generation-window selected-GPU board energy",
   "experiment_id": "e2am-memrag-v3r1",
   "grounded_pareto_frontier_model_keys": [
     "granite",
