@@ -1,91 +1,121 @@
-\section{HybridBench: Controlled Evidence and Memory Tasks}
-\label{sec:benchmark}
+\section{Failure-First Action-Pool Audit}
+\label{sec:audit}
 
-\subsection{Design Objective}
+\subsection{Composite Actions and Strict Utility}
 
-\bench{} is designed for mechanism identification, not for estimating open-domain
-QA performance. Its answers are opaque facts sampled independently of task class
-and split. A model therefore cannot solve an evidence-required item from world
-knowledge, and a task-only majority rule cannot exploit a fixed answer. The
-generator is deterministic and does not call an LLM during dataset construction.
+The single-best/virtual-best gap is established in per-instance algorithm
+selection \cite{Rice1976AlgorithmSelection,LindauerEtAl2019AlgorithmSelection}
+and has a direct LLM-routing analogue in LLMRouterBench's Oracle analysis
+\cite{LiEtAl2026LLMRouterBench}. We operationalize that comparison for composite
+RAG actions, then place it inside a broader audit that also checks interfaces,
+absolute capability, physical-cost comparability, and validation feasibility.
 
-Each of the 800 scenario groups creates a project identifier, a direct-copy token,
-a dataset alias, a private label, an optimizer, scheduler, seed, batch-size update,
-and an authority conflict. It emits seven knowledge documents: a current optimizer
-specification, old and new batch-size revisions, approved and unofficial
-learning-rate records, a project-to-dataset alias, and a dataset-to-scheduler
-record. It also emits three memory events: a chosen seed, a private label, and a
-tombstone deleting that label. Tombstoned events are removed from active retrieval.
-Every query is associated with the exact required and forbidden evidence IDs.
+Let $\mathcal{A}$ be the actions available to a router and let $q_i$ denote one of
+$N$ evaluation queries. An action fixes the generator, retrieval mechanism, memory
+organization, prompt contract, and deterministic guard. Its strict outcome is
+$S_{ia}\in\{0,1\}$. Because the outcome includes answer, evidence, abstention, and
+interface requirements, two routes that produce the same answer string need not
+have the same utility.
 
-\subsection{Eight Task Classes}
-
-The benchmark contains 100 scenarios in each class:
-
-\begin{enumerate}
-    \item \emph{no retrieval}: reproduce an opaque token supplied in the question;
-    \item \emph{knowledge only}: recover the optimizer from an official document;
-    \item \emph{memory only}: recover a previously selected seed;
-    \item \emph{knowledge plus memory}: compose optimizer and seed;
-    \item \emph{temporal update}: prefer the newest approved batch size;
-    \item \emph{authority conflict}: prefer a signed high-authority record over a
-    newer unofficial note;
-    \item \emph{two-hop hybrid}: traverse project $\rightarrow$ dataset alias
-    $\rightarrow$ scheduler;
-    \item \emph{deleted or missing}: abstain because the relevant private fact was
-    tombstoned and is not valid evidence.
-\end{enumerate}
-
-The classes separate evidence availability from evidence resolution. For example,
-temporal and authority tasks require a model to select among plausible conflicting
-records, whereas the deletion task requires it to avoid both retrieval and
-citation of forbidden state.
-
-\subsection{Grouped Splits and Leakage Controls}
-
-Scenario groups are partitioned 10\%/50\%/15\%/10\%/15\% into pilot, train,
-calibration, validation, and sealed test, respectively. This yields 80 pilot, 400
-train, 120 calibration, 80 validation, and 120 test questions, with 15 test
-questions per task class. A scenario ID appears in exactly one split. Each
-task--split pair uses a distinct template family, and temporal/entity histories
-remain inside the group.
-
-The leakage audit rejects cross-split scenario overlap, template-family overlap,
-exact normalized duplicates, and question-shingle Jaccard similarity at or above
-0.95. Facts are randomly sampled instead of cycled by task or split. As a
-construction sanity check, a task-only predictor formed from train-set answer
-majorities answered 21 of the 90 evidence-requiring test items (23.33\%), below the
-frozen 45\% rejection threshold. Pilot outcomes alone may remove infeasible
-non-anchor routes. Router models use train outcomes; isotonic calibration uses the
-calibration split; threshold and safe-route selection use validation. Test answer
-fields and evidence labels remain procedurally sealed until the policy, thresholds,
-and analysis plan are frozen. Because collaborators share the dataset credential,
-this is a procedural seal and not a cryptographic access-control claim.
-
-\subsection{Strict Outcome Contract}
-
-Model output must parse as a JSON-like object with an answer, a list of exact
-evidence IDs, and an abstention flag. Let $F_i$ be token F1 between the predicted
-and expected answer, $R_i$ required-evidence citation recall, $P_i$ citation
-precision, $A_i$ agreement with the required abstention decision, and $V_i$ an
-indicator for a parseable output with no citation outside the retrieved set and no
-forbidden evidence. Strict success is
+The best fixed utility of an action pool is
 
 \begin{equation}
-\begin{aligned}
-S_i=\mathbb{1}\!\big[&F_i\geq0.8 \land R_i=1 \land P_i=1 \\
-                     &{}\land A_i=1 \land V_i=1\big].
-\end{aligned}
-\label{eq:strict-success}
+B(\mathcal{A})=\max_{a\in\mathcal{A}}
+\frac{1}{N}\sum_{i=1}^{N}S_{ia}.
+\label{eq:best-fixed}
 \end{equation}
 
-For tasks without required evidence, recall is one and precision is one only when
-the citation set is empty. For the deleted/missing class, a correct abstention or
-an explicit insufficient-evidence answer receives answer credit, but exposure of a
-tombstoned ID fails the guard. The auxiliary score
-$0.75F_i+0.25R_i$ is retained for diagnosis; it does not replace
-Eq.~\eqref{eq:strict-success} in any primary analysis.
+A label-aware oracle that chooses any successful action separately for each query
+has utility
 
-This contract is intentionally stricter than exact-answer accuracy. It distinguishes
-three failure layers: output parsing, answer content, and evidence support. It also
-prevents a fluent unsupported answer from counting as success.
+\begin{equation}
+O(\mathcal{A})=\frac{1}{N}\sum_{i=1}^{N}
+\max_{a\in\mathcal{A}}S_{ia}.
+\label{eq:oracle}
+\end{equation}
+
+We refer to the difference as \routingheadroom{}:
+
+\begin{equation}
+H(\mathcal{A})=O(\mathcal{A})-B(\mathcal{A}).
+\label{eq:headroom}
+\end{equation}
+
+$O$ is an upper bound derived from outcomes, not a policy that can be executed
+without labels. If $O$ is below a required utility $q_{\min}$, the action pool is
+\emph{capability-infeasible} for that requirement. If $H=0$, no selector can improve
+strict success over the best fixed action on the observed matrix. Positive headroom
+is necessary but not sufficient: a practical policy must still predict the useful
+differences from information available before generation and generalize beyond the
+matrix.
+
+\subsection{Cost Structure}
+
+For route $a$, let $E_{ia}$ be the selected-board generation energy when telemetry
+is valid. Mean cost is $\bar E_a=N^{-1}\sum_iE_{ia}$. An action $a$ descriptively
+dominates $b$ in the observed quality--energy plane when
+$\bar S_a\geq\bar S_b$ and $\bar E_a\leq\bar E_b$, with at least one strict
+inequality. Physical interpretation additionally requires a common measurement
+boundary and attention to device assignment. In this study, all traces use the
+same generation-window definition, but not every pair ran on the same T4 board;
+cross-board dominance is therefore descriptive rather than causal.
+
+An energy-aware router can have value even when its success headroom is zero if
+multiple actions cover the same successful queries at meaningfully different
+costs. If the best fixed action covers every successful query and also has the
+lowest route-level mean energy, then no other fixed route improves the observed
+mean-quality/mean-energy point. This statement does not exclude small per-query
+cost substitutions caused by trace-level energy variation; we audit that
+label-aware bound separately rather than equating route diversity with a useful
+Pareto frontier.
+
+\subsection{Five Audit Questions}
+
+The proposed audit proceeds from route validity to policy feasibility:
+
+\begin{enumerate}
+    \item \textbf{Interface compatibility:} do retained model--prompt--runtime
+    combinations terminate and produce parseable, support-checkable outputs?
+    \item \textbf{Capability:} does $O(\mathcal{A})$ meet the declared operating
+    requirement, or is the action set inadequate even with label access?
+    \item \textbf{Complementarity:} is $H(\mathcal{A})>0$, and which actions add
+    unique successful queries?
+    \item \textbf{Cost comparability:} are costs observed under an explicit common
+    boundary, and do successful actions expose a genuine quality--cost choice?
+    \item \textbf{Constrained selectability:} can a decision-time policy satisfy
+    validation requirements for success, coverage, latency, and abstention?
+\end{enumerate}
+
+Failure at an early question changes the interpretation of later stages. An
+incompatible action should be repaired under a new specification or removed before
+expensive matrix collection. A capability-infeasible pool should be expanded before
+router fitting. Zero complementarity distinguishes action-space failure from
+classification error. A measurement qualification limits energy claims. Finally,
+validation infeasibility should produce an explicit non-deployment state rather
+than a threshold chosen after inspecting test labels.
+
+Figure~\ref{fig:routability-audit} summarizes these questions and the observed
+status of the resident-eligible pool. Its statuses are retrospective diagnostics,
+not prospectively frozen gates for this experiment.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.96\textwidth]{routability_audit.png}
+    \caption{The five-question audit applied retrospectively to the frozen
+    resident-eligible pool. The
+    statuses summarize existing traces: three eligible Granite-1B actions never
+    parsed; even a per-query oracle reached only 12.5\% against the declared 80\%
+    requirement; routing headroom was zero; energy telemetry was complete within
+    the declared generation window but spanned physical boards; and no frozen
+    threshold was validation-feasible.}
+    \label{fig:routability-audit}
+\end{figure*}
+
+\subsection{Confirmatory and Diagnostic Roles}
+
+The learned controller and its hypothesis test were frozen before test-label
+access. The oracle ceilings, headroom, interaction contrasts, task-aware oracle,
+and failure decompositions were computed afterward from the complete sealed matrix
+in response to the negative result. We label them post-hoc diagnostics throughout.
+They explain why the confirmatory policy failed; they do not convert that failure
+into a successful prospective router claim.

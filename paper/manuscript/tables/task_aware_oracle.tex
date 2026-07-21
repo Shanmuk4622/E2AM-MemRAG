@@ -1,0 +1,16 @@
+\begin{table*}[t]
+\caption{Exploratory task-aware choice: direct for no-retrieval and deleted/missing items, grounded otherwise. It uses benchmark task labels and is not a learned router. Effects compare this choice with always grounding; intervals are paired scenario-cluster bootstraps.}
+\label{tab:task-oracle}
+\centering
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Generator & Direct (\%) & Grounded (\%) & Task-aware (\%) & $\Delta$ success [95\% CI] & $\Delta$ GPU J [95\% CI] \\
+\midrule
+Qwen3 0.6B & 12.5 & 0.0 & 12.5 & +12.5 [+6.7, +18.3] & -34.97 [-46.12, -24.22] \\
+Granite 4.1 3B & 20.8 & 44.2 & 65.0 & +20.8 [+13.3, +28.3] & -14.71 [-23.07, -7.17] \\
+SmolLM3 3B & 23.3 & 34.2 & 55.8 & +21.7 [+14.2, +29.2] & -13.05 [-18.43, -8.19] \\
+Qwen3 4B Instruct & 13.3 & 42.5 & 55.8 & +13.3 [+7.5, +20.0] & -30.32 [-44.14, -18.18] \\
+\bottomrule
+\end{tabular}
+\end{table*}

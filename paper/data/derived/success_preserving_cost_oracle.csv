@@ -1,0 +1,2 @@
+baseline_route_id,queries,baseline_successes,oracle_successes,baseline_mean_gpu_joules,oracle_mean_gpu_joules,mean_saving_gpu_joules,percent_saving,selections_changed,selection_counts,same_board_for_changes,analysis_status
+A00_tiny_direct,120,15,15,54.713849544018146,54.66494441003515,0.04890513398299845,0.08938346395029928,1,A00_tiny_direct:119;A03_tiny_hybrid:1,True,post-hoc label-aware descriptive bound

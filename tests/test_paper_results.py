@@ -58,8 +58,9 @@ class PaperResultsPackageTest(unittest.TestCase):
         report = (PAPER / "RESULTS_AUDIT.md").read_text(encoding="utf-8")
         self.assertIn("confirmatory hypothesis **did not pass**", report)
         self.assertIn("floor effect", report)
-        self.assertIn("not an infrastructure failure", report)
-        self.assertIn("controlled negative-result and systems-diagnosis", report)
+        self.assertIn("not an execution failure", report)
+        self.assertIn("action-pool routability", report)
+        self.assertIn("0.0 pp", report)
         self.assertNotIn("hf_", report)
 
 

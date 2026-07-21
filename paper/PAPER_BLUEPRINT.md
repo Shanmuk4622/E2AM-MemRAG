@@ -1,172 +1,206 @@
-# E2AM-MemRAG paper blueprint
+# E2AM-MemRAG publication blueprint
 
-## Recommended title
+## Working title
 
-**E2AM-MemRAG: When Grounding Helps, Hurts, and Costs More---A Controlled
-Study of Generator-Dependent RAG and Energy-Aware Routing**
+**Is the RAG Action Pool Routable? A Failure-First Study of Grounding Utility
+and GPU Energy**
 
-Alternative title: **When RAG Costs More and Helps Less: A Controlled
-Quality-Energy Study of Retrieval and Memory for Small LLMs**
+The title states the actual scientific question and avoids implying that the
+project proposes a successful new router. It also makes the methodological idea
+legible beyond this implementation: audit the action space before optimizing a
+policy over it.
 
-## Central paper claim
+## One-sentence thesis
 
-In a frozen synthetic benchmark with one visible T4 per worker and strict
-support-qualified success, grounding is not uniformly beneficial: it materially
-improves selected 3B/4B generators and removes the only successful stratum of the
-0.6B generator. Every grounded endpoint has a higher observed generation-window
-selected-GPU energy mean; four of five matched pairs are same-board. A calibrated
-energy-aware router can therefore fail by collapsing to an uninformative baseline
-when its lightweight candidate routes provide insufficient strict-success
-separation.
+On the frozen benchmark, the 11 resident-eligible actions had zero query-level routing
+headroom even though six offline reference actions had 28.3 percentage points of
+headroom; matched traces show that the missing complementarity is explained by a
+strong generator--task interaction in grounding utility and by consistently
+positive generation-window GPU-energy increments.
 
-This is a negative-result and mechanism paper. The learned router did not reduce
-energy and the confirmatory hypothesis failed.
+## Publication position
+
+This is a **failure-first evaluation and systems-diagnosis paper**, not a new
+router paper and not a state-of-the-art RAG benchmark claim. Its original object
+of study is the *routability of an action pool*: whether the available actions
+possess the capability, complementarity, interface compatibility, and comparable
+cost measurements needed for a learned router to be scientifically meaningful.
+
+That position distinguishes the work from papers that improve router
+architectures, choose among retrievers, or learn RAG policies under the implicit
+assumption that useful actions already exist. The empirical value is a complete
+counterexample to that assumption plus a trace-level account of why the broader
+reference pool behaves differently. The single-best/virtual-best gap itself is
+established algorithm-selection practice and appears as an Oracle gap in
+LLMRouterBench; novelty must be claimed for the integrated five-question RAG audit
+and sealed diagnosis, not for \(O-B\).
 
 ## Research questions
 
-1. How does retrieval and memory augmentation change strict grounded success,
-   latency, and GPU energy for a fixed small generator?
-2. Is the effect of grounding stable across five frozen generator families?
-3. Can a query/probe-based router preserve strict quality while reducing GPU
-   energy relative to the frozen baseline?
-4. How does the selected policy behave under stale, missing, conflicting, and
-   duplicated evidence?
+1. **Routability:** Did the frozen resident-eligible action pool contain adequate
+   capability and query-dependent headroom beyond its best fixed action?
+2. **Retrieval versus utilization:** With retrieved evidence held constant, where
+   did utility disappear between retrieval, generation, citation, and verification?
+3. **Interaction and cost:** How did generator family and task class change the
+   success and selected-GPU generation-energy effect of composite grounding?
+4. **Protocol consequence:** Could the frozen learned controller satisfy its
+   validation constraints, and did its test behavior agree with the pool audit?
 
-## Defensible contributions
+## Contributions that the evidence supports
 
-1. A deterministic 800-scenario synthetic benchmark with eight task classes,
-   grouped splits, frozen evidence, and strict citation/support scoring.
-2. Generation-window selected-GPU board-energy measurement, paired with explicit
-   retrieval-plus-generation latency and policy-side probe/router timing. CPU and
-   whole-system energy are outside the measurement boundary.
-3. A matched five-model direct-versus-grounded panel on the same 120 test
-   questions, prompt budget, decoding configuration, and route contract.
-4. A calibrated Pareto-routing protocol with explicit abstention, execution
-   coverage, failure reporting, immutable provenance, and fresh-root restoration.
-5. An honest failure analysis showing generator-dependent grounding effects,
-   tiny-model degradation, a router-selection collapse, and robustness floor
-   effects.
+1. **A pre-routing audit.** The paper adapts established best-fixed and
+   virtual-best/oracle success diagnostics to evidence-qualified composite RAG
+   actions, then combines their headroom with interface, capability,
+   cost-comparability, and constrained-selectability checks. The audit exposes a
+   structural failure that classifier metrics alone would conceal.
+2. **An exact action-pool diagnosis.** Across 120 frozen test queries, all 15
+   resident-eligible successes came from one direct route: best-fixed and oracle success
+   were both 12.5%. The reference pool reached a 72.5% oracle, demonstrating that
+   useful complementarity existed outside the deployed choice set.
+3. **A retrieval-to-utilization decomposition.** All five grounded endpoints saw
+   the same ordered evidence, and retrieval was complete on 80.0% of
+   evidence-required queries, yet strict utilization differed sharply by
+   generator. This rules out retriever variation as the explanation for the
+   matched-panel gap.
+4. **A generator--task account of conditional grounding.** Direct generation is
+   preferable on no-retrieval/deleted-context tasks, whereas grounding improves
+   several 3B/4B endpoints on evidence-bearing tasks. Relative to always-grounded
+   execution, the task-aware descriptive rule never reduces success, improves it
+   in four of five matched families, and lowers observed mean generation energy
+   in all five. The remaining Granite-1B pair is an interface-failure case with
+   zero success under both actions.
+5. **Bounded energy evidence and an honest negative result.** The work reports
+   selected-GPU board energy only during generation, discloses cross-board limits,
+   preserves the infeasible calibration outcome, and treats policy--baseline
+   identity as non-informative rather than a quality success.
 
-## Proposed manuscript structure
+## Narrative architecture
 
-### 1. Introduction
+### 1. Introduction: routing begins before the router
 
-- Motivate the hidden energy cost of adding retrieval, memory, reranking, and
-  verification to small LLMs.
-- State that RAG quality gains are often assumed rather than tested jointly with
-  energy and support-qualified correctness.
-- Present the generator-dependent result and failed router hypothesis up front.
+Open with the hidden assumption in conditional RAG: a learner can only exploit
+differences already present among its actions. Define the central counterfactual
+question—could *any* per-query selector have improved on the best fixed action?
+Preview the 0.0 pp versus 28.3 pp headroom contrast and state the failed
+confirmatory result without apology or suspense.
 
-### 2. Related work
+### 2. Related work and unresolved gap
 
-- Energy-aware inference and model routing.
-- Retrieval-augmented generation and verification.
-- Long-term memory architectures.
-- Conditional computation, abstention, and Pareto optimization.
-- Negative results and reproducibility in controlled LLM evaluation.
+Organize by the assumption each literature makes:
 
-### 3. E2AM-MemRAG methodology
+- adaptive RAG and retriever routing optimize a policy;
+- model routing chooses among inference endpoints;
+- memory systems enlarge the action space;
+- efficient RAG studies cost or token budgets;
+- RAG evaluation and robustness studies expose pipeline failures.
 
-- Benchmark construction, task classes, and leakage controls.
-- The 17 clean-test routes represented in the final release.
-- Five-model direct-grounded panel.
-- Strict support-qualified success definition.
-- Selected-GPU board-energy measurement and scope.
-- The disclosed post-validation/pre-test Stage-06 amendment: the validation
-  constraints were infeasible, so a fail-closed threshold of 1.0 was frozen and
-  no positive router claim was permitted.
-- Router features, calibration, thresholding, abstention, and frozen gates.
-- Immutable worker closures and restoration verification.
+End with the gap: these lines rarely require a trace-level feasibility audit of
+the candidate action pool before learning or judging a router.
 
-### 4. Experimental protocol
+### 3. Failure-first action-pool audit
 
-- One T4 per scientific run.
-- Frozen model revisions, seed 4622, 120 clean test queries per route.
-- Clustered bootstrap with 10,000 replicates over query clusters.
-- Four corruption conditions and matched clean-route comparisons.
-- Predeclared quality, energy, and operating-constraint gates.
+Adapt the established \(B\), \(O\), and \(H=O-B\) comparison. Make clear that \(O\) is a descriptive
+post-hoc upper bound and cannot be reported as an implementable policy. Present
+the five audit questions: interface compatibility, capability, complementarity,
+cost comparability, and constrained selectability.
 
-### 5. Results
+### 4. Controlled testbed and measurement contract
 
-#### 5.1 Route-level quality-energy frontier
+Describe HybridBench as a diagnostic instrument rather than a public-benchmark
+surrogate. Explain grouped splits, task classes, frozen evidence, exact model
+revisions, prompt/interface contracts, strict support-qualified success, and the
+selected-GPU generation-only energy boundary.
 
-Use `figures/route_quality_energy.svg` and `tables/route_results.md`.
+### 5. Experimental protocol
 
-#### 5.2 Generator-dependent grounding
+Report the 17-route clean matrix, 3-route robustness matrix, 120-query matched
+test set, one visible T4 per worker, cluster bootstrap, frozen routing protocol,
+and the disclosed pre-test amendment after all validation thresholds proved
+infeasible. Separate confirmatory decisions from post-hoc diagnosis.
 
-Use `figures/model_grounding_effect.svg` and `tables/model_transfer.md`.
-Emphasize the positive Granite 3B and Qwen 4B effects, the uncertain SmolLM3
-effect, and the significant Qwen 0.6B degradation.
+### 6. Results in causal order
 
-#### 5.3 Router outcome and confirmatory hypothesis
+1. Start with action-pool headroom: resident-eligible 0.0 pp, reference 28.3 pp.
+2. Show that grounded endpoints received identical retrieval outputs.
+3. Locate divergence in parsing, citation use, answer accuracy, and support.
+4. Show generator--task interaction and matched grounding effects.
+5. Report task-aware descriptive oracles and their energy differences.
+6. Explain energy increments through longer input/output and generation time.
+7. Return to validation infeasibility and the confirmatory policy identity.
+8. Close with compatibility and robustness floor effects.
 
-Report the collapse to `A03_tiny_hybrid`, 0% strict success, 143.16 J/query,
-and zero paired energy difference. Explicitly report the failed energy and
-confirmatory gates.
+This ordering turns the router failure from an isolated disappointing result into
+the predicted consequence of a measured action-space defect.
 
-#### 5.4 Robustness and abstention
+### 7. Discussion
 
-Use `tables/robustness.md`. Interpret the zero deltas as a floor effect because
-clean selected-policy success was already zero.
+Develop a readiness ladder: first validate action interfaces, then absolute
+capability, then complementarity, then cost comparability, and only then fit a
+constrained selector. Argue for conditional grounding at the task/model boundary,
+not indiscriminate retrieval. Explain that bigger action pools are useful only
+when they add non-dominated, uniquely successful actions.
 
-### 6. Failure analysis
+### 8. Threats to validity, limitations, and ethics
 
-- Strict JSON/citation parsing and support requirements.
-- Weak success signal among router-eligible tiny/small routes.
-- Generator capacity as an interaction variable for grounding.
-- Energy overhead of retrieval, longer contexts, and verification.
-- Why calibration quality alone does not imply a useful routing policy.
+Keep post-hoc analyses visibly labeled. Bound claims to the synthetic benchmark,
+one hardware class, one released confirmatory seed, frozen prompts/parsers, and
+selected-GPU generation-window energy. Treat cross-board energy differences as
+descriptive. Do not claim carbon, whole-system energy, production robustness, or
+public-benchmark state of the art.
 
-### 7. Limitations
+### 9. Conclusion
 
-- Controlled synthetic benchmark rather than a public QA benchmark.
-- One hardware class and selected-GPU energy rather than whole-system energy.
-- One seed in the released confirmatory evaluation.
-- Four physical T4 boards across worker lanes; cross-lane energy contrasts are
-  descriptive because board/session effects are not separately identified.
-- The Granite 4.0 1B checkpoint exhibited a frozen prompt/runtime-format failure
-  (80 exclamation marks and zero parseable outputs), so its zero-success pair is
-  not evidence of general model incapacity.
-- Frozen prompt and parser contracts.
-- No carbon claim and no broad real-world generalization claim.
+End with the general result: a router cannot manufacture complementarity. The
+first scientific question in adaptive RAG should be whether the action space is
+routable at all.
 
-### 8. Conclusion
+## Main evidence map
 
-Conclude that energy-aware RAG routing requires route candidates that first
-provide reliable, generator-specific quality separation. Adding retrieval and
-memory is not automatically a quality improvement, particularly for sub-billion
-generators under strict grounded evaluation.
-
-## Main paper assets
-
-| Paper item | Source |
+| Manuscript claim | Trace-derived artifact |
 | --- | --- |
-| Primary outcome | `data/derived/overall_results.csv` |
-| Hypothesis gates | `data/derived/hypothesis_gates.csv` |
-| Route comparison | `data/derived/route_statistics.csv` |
-| Mechanism contrasts | `data/derived/controlled_contrasts.csv` |
-| Model transfer | `data/derived/model_transfer.csv` |
-| Scenario analysis | `data/derived/scenario_class_statistics.csv` |
-| Robustness | `data/derived/robustness_conditions.csv` |
+| Resident/reference/full headroom | `data/derived/routability_pools.csv` |
+| Success-preserving cost bound | `data/derived/success_preserving_cost_oracle.csv` |
+| Unique route contributions | `data/derived/routability_route_contributions.csv` |
+| Five audit gates | `data/derived/routability_gates.csv` |
+| Identical retrieval and utilization stages | `data/derived/retrieval_to_utilization.csv` |
+| Generator--task effects | `data/derived/task_grounding_effects.csv` |
+| Matched grounding interactions | `data/derived/grounding_interactions.csv` |
+| Task-aware descriptive oracles | `data/derived/task_aware_oracle.csv` |
+| Energy mechanism | `data/derived/energy_mechanism.csv` |
+| Parser/citation/answer failures | `data/derived/failure_decomposition.csv` |
+| Confirmatory outcome | `data/derived/overall_results.csv` |
+| Robustness floor effects | `data/derived/robustness_conditions.csv` |
 | Trace integrity | `data/derived/trace_audit.csv` |
-| Figure 1 | `figures/route_quality_energy.svg` |
-| Figure 2 | `figures/model_grounding_effect.svg` |
 
 ## Claim guardrails
 
-Allowed:
+Supported:
 
-- The experiment and fresh-root restoration completed successfully.
-- The predeclared hypothesis failed because energy reduction failed.
-- Grounding effects differed materially by generator.
-- All released executions and GPU-energy samples had complete coverage.
-- The findings hold for the frozen controlled benchmark and hardware scope.
+- The frozen resident-eligible action pool had zero observed success headroom.
+- Eligibility is conditional on the frozen co-resident T4 contract.
+- The success-preserving per-query cost bound saves 0.049 J/query, so zero
+  success headroom must not be called zero cost headroom.
+- The offline reference pool had substantial descriptive oracle headroom.
+- Grounding utility varied by generator and task under a shared retrieval output.
+- Grounding increased measured generation-window selected-GPU energy in all five
+  matched pairs; four pairs are same-board comparisons.
+- The constrained validation problem had no feasible threshold, and the frozen
+  confirmatory policy did not reduce energy.
+- The task-aware rules and per-query oracles are post-hoc descriptive analyses.
 
-Not allowed:
+Unsupported:
 
-- The router reduced energy.
-- Zero robustness delta demonstrates robustness.
-- GPU board energy equals whole-system energy or carbon emissions.
-- Retrieval, memory, verification, or routing energy was directly measured.
-- The results establish public-benchmark SOTA or broad production behavior.
-- All RAG or memory systems harm small models in general.
+- The proposed router reduced energy or preserved useful quality.
+- The per-query or task-aware oracle is an implemented deployable policy.
+- Retrieval is universally harmful to small language models.
+- Zero corruption delta demonstrates robustness.
+- Selected-GPU generation-window energy equals end-to-end or whole-system energy.
+- The benchmark establishes real-world or public-benchmark superiority.
+
+## Submission strategy
+
+The most credible scope is an empirical NLP/ML systems or evaluation venue that
+welcomes rigorous negative results, adaptive RAG analysis, or reproducibility.
+The manuscript should be judged on diagnostic novelty and evidence discipline,
+not on a new routing architecture. A short cover note should foreground the
+pre-routing audit and the pre-test preservation of a failed confirmatory result.

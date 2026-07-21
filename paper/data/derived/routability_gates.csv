@@ -1,0 +1,6 @@
+gate,status,evidence
+Interface compatibility,PARTIAL,3 retained actions had 0% parseability
+Capability,FAIL,oracle 12.5% < frozen 80% requirement
+Complementarity,FAIL,routing headroom 0.0 pp
+Cost comparability,QUALIFIED,complete generation-window telemetry; multiple physical T4 boards
+Constrained selectability,FAIL,0/9 validation thresholds feasible

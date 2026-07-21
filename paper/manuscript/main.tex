@@ -10,6 +10,7 @@
 \usepackage{cite}
 \usepackage{url}
 \usepackage{microtype}
+\usepackage{placeins}
 \usepackage[hidelinks]{hyperref}
 
 \graphicspath{{figures/}{../figures/}}
@@ -21,39 +22,39 @@
 \maketitle
 
 \begin{abstract}
-Retrieval, external memory, and evidence verification are often attached to small
-language models under the assumption that more grounding will improve reliability.
-That assumption ignores two coupled questions: whether a generator can use the
-added evidence under a strict output contract, and whether the resulting quality
-gain justifies its computational cost. We present E2AM-MemRAG, a controlled study
-of generator-dependent grounding and energy-aware routing. The study constructs
-800 deterministic scenario groups across eight evidence and memory tasks, freezes
-grouped train/calibration/validation/test splits, and evaluates 17 pilot-retained
-routes on 120 sealed-test questions. Five pinned FP16 generators are compared
-directly and under an identical hybrid-retrieval, graph-memory, and deterministic
-verification route. Success requires answer correctness, complete required-evidence
-citations, perfect citation precision, correct abstention, parseability, and no
-forbidden evidence. Generation-window selected-GPU board energy is obtained by
-integrating 50-ms NVML power samples on NVIDIA T4 GPUs; CPU and whole-system energy
-are outside this boundary.
+RAG routers are usually optimized as if their candidate actions already contain a
+useful, query-dependent trade-off. That premise is testable before a learned policy
+is credited. Using sealed traces, we retrospectively apply an integrated
+failure-first audit that separates the best fixed action from a label-aware
+per-query oracle. Their difference, \emph{routing headroom}, quantifies whether
+selection can improve strict utility at all. The controlled study contains 800
+grouped scenarios, eight evidence and memory tasks, five pinned generators, and
+17 retained direct and composite-grounding actions. The sealed test contains
+2,040 route--query traces. Success jointly
+requires answer correctness, exact required-evidence citations, perfect citation
+precision, correct abstention, parseability, and no forbidden evidence. We also
+measure selected-T4 board energy during generation; retrieval and whole-system
+energy lie outside that boundary.
 
-Grounding was not uniformly beneficial. It changed strict success by
-$-12.5$ percentage points for Qwen3-0.6B, $+23.3$ points for Granite-4.1-3B,
-$+10.8$ points for SmolLM3-3B, and $+29.2$ points for Qwen3-4B. Every grounded
-endpoint had a higher observed GPU-energy mean; four pairs were same-board and
-the Granite-4.0-1B contrast was cross-board. The best route reached 44.2\% strict
-success at 176.68 J/query. The router's validation constraints were infeasible;
-a disclosed pre-test amendment froze a fail-closed threshold and prohibited a
-positive routing claim. On test, the policy fell back to the same route for all
-queries, obtained 0\% strict success, and saved 0 J, so the confirmatory hypothesis
-failed. The result is a mechanism-level negative finding: infeasible calibration
-constraints and an uninformative fail-closed rule can nullify an otherwise useful
-route set, and grounding gains must be established per generator rather than assumed.
+The 11-action resident-eligible pool had a best fixed success of 12.5\% and an oracle
+ceiling of 12.5\%: all 15 successes came from one direct route, leaving 0.0
+percentage points of routing headroom. By contrast, matched direct/grounded pairs
+for three 3B--4B references had 13.3--21.7 points of headroom, and the complete
+17-action matrix had 29.2 points. Retrieval was identical across grounded
+generators and complete for 80.0\% of evidence-required questions, yet strict
+success ranged from 0\% to 58.9\%, localizing much of the variation after evidence
+acquisition. A task-aware, non-learned direct/grounded oracle improved both success
+and measured generation energy relative to always grounding for the capable
+references. The frozen learned controller nevertheless had no validation-feasible
+threshold, selected one fail-closed fallback for every test query, achieved 0\%,
+and saved no energy. The study therefore identifies action-pool routability as an
+empirical prerequisite: calibration cannot manufacture capability or
+complementarity absent from the eligible actions.
 \end{abstract}
 
 \begin{IEEEkeywords}
-retrieval-augmented generation, language-model routing, Green AI, GPU energy,
-long-term memory, abstention, negative results, reproducible evaluation
+retrieval-augmented generation, language-model routing, action-pool feasibility,
+GPU energy, grounding, abstention, negative results
 \end{IEEEkeywords}
 
 \input{sections/01_introduction}
@@ -69,14 +70,10 @@ long-term memory, abstention, negative results, reproducible evaluation
 \appendices
 \input{appendices/route_catalog}
 \input{appendices/scoring_contract}
-\input{appendices/reproducibility}
 \input{appendices/scenario_effects}
+\input{appendices/reproducibility}
 
-\section*{Acknowledgment}
-The author thanks the open-source model and tooling communities whose released
-artifacts made the controlled study possible. No external sponsor influenced the
-study design, analysis, or reporting.
-
+\FloatBarrier
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 

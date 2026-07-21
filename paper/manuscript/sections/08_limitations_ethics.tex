@@ -1,75 +1,87 @@
-\section{Limitations, Reproducibility, and Ethics}
+\section{Threats to Validity, Reproducibility, and Ethics}
 \label{sec:limitations}
 
-\subsection{External Validity}
+\subsection{Construct and External Validity}
 
-\bench{} is synthetic and controlled. Its opaque answers and exact evidence IDs
-support mechanism diagnosis, but they do not estimate performance on public QA,
+\bench{} is synthetic and controlled. Its generated identifiers and exact evidence
+sets support mechanism diagnosis but do not estimate performance on open-domain QA,
 long-document memory, conversational personalization, or production traffic. The
-equal eight-task mixture is a design choice, and each class contains only 15 test
-scenarios. Model ranks and average grounding effects may change under another task
-distribution, prompt, context budget, or verifier.
+equal eight-class mixture is a design choice, and each test class contains only 15
+queries. Model rankings and average grounding effects may change with another task
+distribution, prompt, context budget, retriever, or verifier. This limitation is
+especially important given evidence that synthetic context-utilization tests can
+misrepresent behavior under realistic retrieval \cite{HagstromEtAl2025RealityCheck}.
 
-Only one deterministic generation was collected per route--question pair under
-one experiment seed. Bootstrap intervals resample questions; they do not quantify
-decoding variance, repeated-run variance, or hardware measurement uncertainty.
-Secondary intervals were not multiplicity-corrected. The policy evaluation replays
-a complete frozen query-by-route matrix rather than conducting an independent
-prospective online deployment.
+Strict success is an operational conjunction. Exact-ID scoring can reject a
+recoverable formatting variant, while set membership cannot prove semantic
+entailment. The layered decomposition mitigates but does not remove this construct
+limitation. Sensitivity at answer-F1 thresholds 0.5, 0.8, and 1.0 preserves the
+ranking and effect signs of the capable grounded endpoints (Appendix~\ref{app:scenario-effects}),
+but it does not test alternative citation semantics.
 
-\subsection{Measurement and Hardware Limits}
+\subsection{Post-Hoc Diagnostics and Statistical Scope}
 
-The energy endpoint covers only selected-board power during generation. It excludes
-CPU retrieval and memory work, routing, parsing, verification, indexing, model
-loading, uploads, host idle power, network, and cooling. No idle-power subtraction,
-whole-system measurement, token-normalized efficiency, or carbon conversion is
-reported. Four T4 boards were used for clean lanes, route order was route-major,
-and routes were not randomized or interleaved. Board, session, thermal, and model
-residency effects may therefore confound cross-lane and cross-model energy
-comparisons. The Granite-4.0-1B matched endpoints are explicitly cross-board.
+The action-pool oracle, routing headroom, unique-success counts, interaction
+contrasts, task-aware oracle, and failure layers were specified after the
+confirmatory policy failed. They use sealed-test outcomes and must not be read as
+prospective policy estimates. The task-aware oracle is given the benchmark task
+class, a signal that a real deployment would have to infer. Positive headroom in
+the reference pool shows that complementary outcomes exist on this matrix; it does
+not establish out-of-sample predictability.
 
-\subsection{Model and Interface Limits}
+Only one deterministic generation was recorded per route--query pair. Bootstrap
+intervals resample scenarios and do not quantify decoding variance, repeated-run
+variance, or hardware uncertainty. Exploratory intervals are not corrected for
+multiple comparisons. The controller is evaluated by replaying a complete frozen
+route matrix rather than by an independent prospective online deployment.
 
-Different model families use different tokenizers and chat templates. Reference
-models ran sequentially alone, whereas online tiny/small routes were evaluated
-under the resident-pair contract. Input and output token counts differ substantially,
-so this is not an intrinsic architecture-efficiency leaderboard. The frozen
-Granite-4.0-1B integration emitted a repeated 80-token sequence and is an observed
-compatibility failure, not a general assessment of the checkpoint.
+\subsection{Measurement and Hardware Validity}
 
-The citation guard checks syntax and set membership, not semantic entailment.
-Exact-ID parsing may reject a value whose intended evidence a human could infer.
-Conversely, a correctly formatted citation can pass the guard without proving that
-the natural-language claim is semantically entailed beyond this generated benchmark.
+The energy endpoint covers only the selected GPU board during
+\texttt{model.generate()}. CPU retrieval, dense encoding, memory traversal, routing,
+parsing, verification, indexing, model loading, uploads, host idle power, network,
+cooling, and storage are outside the boundary. No idle-power subtraction,
+whole-system instrumentation, carbon conversion, or token-normalized causal model
+is reported. Consequently, the work does not measure whole-system energy and does
+not measure carbon emissions.
 
-\subsection{Protocol and Robustness Limits}
+Four T4 boards were used, execution was route-major, and routes were not randomized
+or interleaved. Board, session, temperature, and residency can confound cross-lane
+or cross-model comparisons. Four matched effects are same-board; the
+Granite-4.0-1B pair is cross-board. Input and output tokens also differ, so this is
+not an intrinsic architecture-efficiency leaderboard.
 
-The Stage-06 threshold amendment occurred after validation infeasibility was known
-but before test-label access. It is fully disclosed and prohibits a positive router
-claim, yet it remains a deviation from the original implementation path. Five
-nonanchor routes were pilot-pruned. The test-label seal is procedural because
-collaborators shared repository access, not a cryptographic guarantee.
+\subsection{Model, Protocol, and Robustness Limits}
 
-The robustness study covers only three deployable anchors and four synthetic
-corruptions. The selected policy and grounded small-model anchor had zero clean
-success, creating floor effects. The compromise flag detects a known literal marker
-and should not be generalized to unseen prompt-injection strategies.
+Different model families use different tokenizers and chat templates. The
+Granite-4.0-1B integration failure is specific to the frozen
+model--prompt--runtime triple. It cannot support a general capability claim about
+the checkpoint. Five non-anchor actions were pilot-pruned. The 3B/4B references
+were excluded because they were run sequentially, whereas eligible models had to
+coexist on one T4 with 15\% free VRAM and no offload; model-loading time was not in
+the route-latency boundary. This resident-set constraint is defensible for the
+frozen controller but not universal. Dynamic loading, another accelerator, or a
+different eligible set would induce another routing problem.
 
-\subsection{Ethics and Environmental Claims}
+The threshold-completion amendment occurred after validation infeasibility was
+known but before test labels were accessed. It is disclosed, preserved in the
+policy artifact, and prohibits a positive router claim, but it remains a protocol
+deviation. The test seal was procedural because collaborators shared repository
+access. The robustness matrix covers only three anchors and four synthetic
+corruptions; its all-zero selected-policy outcome cannot demonstrate a defense.
 
-The benchmark is programmatically generated and contains no personal information.
-Memory records are synthetic, and the deletion task exists to test exclusion of a
-tombstoned identifier. The work does not estimate carbon emissions, avoided
-emissions, or environmental impact. Such claims would require a broader energy
-boundary, location- and time-specific electricity data, and a documented allocation
-method. The responsible interpretation is limited to measured T4 generation-window
-board energy within the frozen experiment.
+\subsection{Reproducibility and Ethics}
 
-\subsection{Artifact Availability}
+The release contains 2,040 clean and 1,440 robustness traces with complete declared
+generation-window telemetry, frozen specifications, checksums, route cards,
+analysis code, and the amended policy. Artifacts were consolidated without deleting
+worker branches, restored into a fresh directory, and hash-verified before release.
+This supports audit and exact re-analysis, although reproducibility on a different
+T4 may not reproduce the same power readings.
 
-The source repository contains the notebook builders, execution notebooks, exact
-analysis code, LaTeX sources, derived tables, and figures. The results package pins
-the Hugging Face release commit, includes 11 checksum-verified Stage-09 artifacts,
-and records the frozen specification digest. If the dataset repository remains
-private during review, artifacts must be supplied through an anonymous or
-reviewer-accessible archive; the manuscript does not assume public visibility.
+The generated benchmark contains no personal information; memory records and
+deletion events are synthetic. No external sponsor influenced the study. Because
+the work neither measures whole-system energy nor converts electricity to emissions,
+it makes no claim about avoided carbon or environmental impact. If the dataset
+repository is private during review, an anonymous checksum-preserving archive is
+required for reviewers.

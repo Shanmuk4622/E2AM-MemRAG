@@ -1,155 +1,162 @@
 \section{Results}
 \label{sec:results}
 
-\subsection{Release Integrity}
+\subsection{RQ1: The Resident-Eligible Pool Has Zero Success Headroom}
 
-The experiment completed and the release passed a fresh-root restore. All 11
-Stage-09 artifacts matched their declared SHA-256 hashes and byte counts. The clean
-set contains 2,040 unique units and the robustness set 1,440; both have zero
-duplicate IDs, divergent route hashes, non-finite audited values, or execution
-failures. Generation-window energy coverage is 100\% in both sets
-(Table~\ref{tab:trace-integrity}). Thus the negative outcome is not attributable to
-missing runs or telemetry filtering.
+\input{tables/routability_pools}
 
-\input{tables/trace_integrity}
+The post-hoc audit in Table~\ref{tab:routability-pools} separates the opportunity
+present in the action pool from the learned policy. In the 11-action
+resident-eligible pool, A00 succeeded on 15 of 120 queries (12.5\%). No other eligible route succeeded
+on any query, so the union of successes was exactly the A00 success set. Therefore
+$B(\mathcal{A}_{\mathrm{dep}})=O(\mathcal{A}_{\mathrm{dep}})=0.125$ and
+$H(\mathcal{A}_{\mathrm{dep}})=0$. This is an empirical impossibility certificate
+for strict-success improvement on the sealed matrix: no alternative selector,
+including a label-aware one, could beat the fixed A00 route with the same actions.
 
-Across all clean routes, 58.38\% of outputs parsed, 19.41\% passed the answer check,
-18.04\% passed the support guard, and 11.23\% met every strict condition. These
-aggregate rates are diagnostic rather than model-weighted benchmark scores because
-the route matrix deliberately repeats every question under many mechanisms.
+A00 also had the smallest observed mean generation energy in the eligible pool,
+54.71 J/query; all ten zero-success alternatives had higher route means. Thus no
+fixed route improved the observed mean-quality/mean-energy point. A label-aware
+per-query cost bound is slightly different: while retaining all 15 A00 successes,
+it chooses A03 for one A00-failure query and lowers the mean by 0.049 J/query
+(0.089\%). The changed trace is same-board. This negligible but nonzero saving is
+why zero \emph{success} headroom is not described as a proof of zero cost
+headroom. Other cross-board comparisons remain descriptive.
 
-\subsection{Confirmatory Router Outcome}
+The reference actions show that zero headroom was not a property of the testbed.
+The Granite-4.1-3B direct/grounded pair had 20.8 \pp{} of headroom, the SmolLM3 pair
+21.7 points, and the Qwen3-4B pair 13.3 points. Across the six offline reference
+actions, the oracle reached 72.5\% versus a 44.2\% best fixed route. The complete
+17-action matrix reached 73.3\%, leaving 29.2 points of headroom. Complementarity
+existed, but the capable complementary actions were unavailable to the controller.
+Figure~\ref{fig:headroom} makes this action-set dependence visible: the same test
+queries have no utility gap under resident eligibility and a substantial gap once
+the sequential reference endpoints are admitted.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.94\textwidth]{action_pool_headroom.png}
+    \caption{Best fixed strict success and the post-hoc per-query oracle for six
+    action pools. The resident-eligible pool has no success headroom; each capable
+    direct/grounded reference pair does. Oracle values use labels and quantify an
+    upper bound, not prospective policy performance.}
+    \label{fig:headroom}
+\end{figure*}
+
+\subsection{RQ2: Retrieval Success Does Not Imply Evidence Use}
+
+\input{tables/retrieval_utilization}
+
+All five grounded endpoints received identical ordered knowledge and memory IDs on
+all 120 queries. On the 90 evidence-required items, those lists contained every
+required ID for 72 queries (80.0\%); the two-hop class was complete for 14 of 15.
+This common acquisition layer provides a controlled basis for comparing what
+happened after retrieval.
+
+Table~\ref{tab:retrieval-utilization} reveals a large retrieval-to-utilization gap.
+The Qwen3-0.6B grounded endpoint parsed only 32.2\% of evidence-task outputs and
+never produced a complete citation set or a valid answer. The Granite-4.0-1B
+endpoint parsed none. In contrast, Granite-4.1-3B parsed 95.6\%, cited all required
+evidence on 77.8\%, and achieved 58.9\% strict success. SmolLM3 parsed every output
+but cited all required IDs on only 44.4\%, yielding 43.3\% strict success. Qwen3-4B
+reached 56.7\%. Because retrieved IDs were held constant, differences in those IDs
+cannot explain the between-generator variation. Formatting, answer formation,
+citation transfer, and abstention remain observable downstream failure loci; the
+traces do not provide a variance decomposition among them.
+
+\subsection{RQ3: Grounding Is a Generator--Task Interaction}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.97\textwidth]{task_grounding_heatmap.png}
+    \caption{Grounded-minus-direct strict success by generator and task class. Each
+    cell contains 15 paired queries. Several composite-grounded endpoints lose
+    direct-task successes, while only the capable references gain strict successes
+    on evidence tasks. The Granite-4.0-1B row is an integration failure.}
+    \label{fig:task-heatmap}
+\end{figure*}
+
+Across the equal eight-task mixture, composite grounding changed strict success by
+$-12.5$ \pp{} for Qwen3-0.6B (95\% interval $[-18.3,-6.7]$), $+23.3$ for
+Granite-4.1-3B ($[10.0,37.5]$), $+10.8$ for SmolLM3 ($[-2.5,24.2]$), and $+29.2$
+for Qwen3-4B ($[16.7,41.7]$). The 1B Granite endpoints both scored zero and are not
+interpreted as a grounding effect. Exploratory difference-in-differences contrasts
+make the interaction explicit: the Granite-4.1-3B, SmolLM3, and Qwen3-4B effects
+exceeded the Qwen3-0.6B effect by 35.8 $[23.3,48.3]$, 23.3 $[11.7,34.2]$, and
+41.7 $[29.2,54.2]$ points, respectively. Granite-4.1-3B also exceeded SmolLM3 by
+12.5 $[5.8,20.0]$ points. These post-hoc intervals are not multiplicity-adjusted.
+
+Figure~\ref{fig:task-heatmap} shows why an aggregate ``RAG helps'' statement is
+misleading. Qwen3-0.6B already had zero success on every evidence-required class;
+the composite endpoint did not make those answers worse. It lost the 15
+direct-copy successes without adding an evidence-task success. The capable
+references display the opposite pattern: direct routes cover evidence-free
+behavior, whereas composite-grounded routes add knowledge, memory, temporal, and
+authority successes. Two-hop strict
+success remains weak despite 93.3\% retrieval completeness, further separating
+evidence acquisition from use.
+
+\input{tables/task_aware_oracle}
+
+The same complementarity yields a constructive post-hoc result. A task-aware rule
+that chooses direct operation for no-retrieval and deleted/missing items and the
+matched grounded route for the other six classes exactly matches the pair oracle in
+this matrix. For Granite-4.1-3B, SmolLM3, and Qwen3-4B, it reaches 65.0\%, 55.8\%,
+and 55.8\% success, improving on always grounding by 20.8, 21.7, and 13.3 points.
+It also lowers observed generation energy by 14.71, 13.05, and 30.32 J/query,
+respectively. The rule receives benchmark task labels and is not deployable as-is;
+it demonstrates a utility pattern that a suitable eligible pool and
+retrieval-need signal could potentially exploit in a prospective study.
+
+\subsection{Grounded Prompts Increase Measured Generation Work}
+
+Every grounded endpoint had a higher mean selected-board generation energy than its
+direct counterpart. The four same-board increases were 146.72 J/query for
+Qwen3-0.6B, 119.53 for Granite-4.1-3B, 41.52 for SmolLM3, and 171.71 for Qwen3-4B.
+The Granite-4.0-1B increase of 3.88 J is cross-board and descriptive. Grounding also
+added 499--632 mean input tokens and, for the four interpretable pairs, 8--38 output
+tokens. Per-query energy differences were closely associated with generation-time
+differences ($r=0.941$--1.000). These are descriptive associations from route-major
+single runs, not a causal decomposition or an intrinsic model-efficiency ranking.
+
+The apparent tension between higher always-grounded energy and the savings in
+Table~\ref{tab:task-oracle} is important. The composite grounded action costs more
+when invoked, but avoiding it on the two evidence-free classes reduces average
+energy while preserving complementary successes. Conditional invocation, not
+always-on grounding, creates the useful quality--cost structure.
+
+\subsection{RQ4: The Frozen Controller Confirms the Audit Failure}
 
 \input{tables/confirmatory_result}
 
-The frozen policy invoked A03 for all 120 questions. Its strict success was 0\%
-(
-\ci{} [0, 0]), mean generation-window GPU energy was 143.16 J/query
-([138.14, 148.07]), and the summed policy-latency components averaged 3.760 s/query
-([3.652, 3.863]). Execution coverage was 100\% and abstention 15\%.
+No validation threshold met the frozen success, coverage, and abstention
+requirements. Under the disclosed completion amendment, the controller selected
+A03 for all 120 test queries. It achieved 0\% strict success, used 143.16 J/query,
+and had 15\% abstention with 100\% execution coverage. The fixed baseline was the
+same A03 trace for every query. Consequently, $\Delta_S=\Delta_E=0$ by identity,
+with degenerate intervals. The formal non-inferiority margin passed but is
+non-informative at zero utility; the energy-reduction gate failed, and the joint
+confirmatory hypothesis failed.
 
-The fixed baseline was also A03. Consequently, both paired differences were exactly
-zero: $\Delta_S=0$ and $\Delta_E=0$ with degenerate intervals. The formal relative
-quality and operating gates passed, but the upper energy bound was not below zero.
-The joint hypothesis therefore failed. The quality result is floor equivalence,
-not preservation of useful quality.
+This outcome is not evidence that A03 was the best action for every query. It is
+fallback collapse: no predicted action cleared the threshold. The post-hoc oracle
+adds the stronger diagnosis that even replacing the controller with a perfect
+strict-success selector could not have improved over A00 within the eligible pool.
+The learned policy additionally chose the wrong fixed action for the observed test
+matrix, but action-pool redesign is required before classifier refinement can create
+routing headroom.
 
-Test confidence occupied a single 0--0.1 bin, with mean 0.00937, Brier score
-$8.79\times10^{-5}$, and 10-bin ECE 0.00937. Because every selected outcome was
-zero, these small errors indicate a correctly pessimistic but non-discriminating
-policy; they are not evidence of broadly effective calibration.
+\subsection{Compatibility and Corruption Diagnostics}
 
-\subsection{Route-Level Quality--Energy Structure}
+The retained Granite-4.0-1B actions A04, A12, and A13 never parsed under the frozen
+prompt/chat-template/runtime combination and repeatedly reached the 80-token limit
+with a degenerate output. We classify this as a model--prompt--runtime compatibility
+failure, not evidence that the checkpoint family is generally incapable of RAG.
+Repairing the interface after test access would have changed the specification.
 
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=0.93\textwidth]{route_quality_energy.png}
-    \caption{Strict success versus generation-window selected-GPU board energy for
-    the 17 retained clean routes. Offline reference routes provide the best
-    quality points but were not eligible router actions. Cross-board comparisons
-    are descriptive; Table~\ref{tab:hardware} gives route assignment.}
-    \label{fig:route-scatter}
-\end{figure*}
-
-\input{tables/route_highlights}
-
-Figure~\ref{fig:route-scatter} shows that the best route was the offline
-Granite-4.1-3B grounded endpoint M18: 44.17\% success at 176.68 J/query and 2.647-s
-median route latency. The grounded Qwen3-4B reference A14 achieved 42.50\% at
-256.13 J, while grounded SmolLM3 M20 achieved 34.17\% at 148.93 J. Among direct
-references, M19 reached 23.33\%, M17 20.83\%, and M21 13.33\%. The only nonzero
-online tiny/small direct endpoint was A00 at 12.50\% and 54.71 J.
-
-The grounded Pareto designation in the release applies only to the five grounded
-model endpoints in success--energy--latency space; it identifies the Granite-4.1-3B
-and SmolLM3 families. It is not a global frontier over all 17 routes, and the best
-grounded points were not deployable policy actions.
-
-\subsection{Generator-Dependent Grounding}
-
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=0.94\textwidth]{grounding_effect_forest.png}
-    \caption{Matched grounded-minus-direct strict-success effects. Filled markers
-    denote intervals that exclude zero; the open SmolLM3 marker spans zero. The
-    energy column reports the paired generation-window GPU-energy increase. The
-    Granite-4.0-1B energy pair is cross-board and descriptive.}
-    \label{fig:grounding-forest}
-\end{figure*}
-
-\input{tables/model_transfer}
-
-The matched panel in Fig.~\ref{fig:grounding-forest} and
-Table~\ref{tab:model-transfer} rejects a model-independent account of grounding.
-Within the equal eight-task mixture, Qwen3-0.6B changed from 12.50\% direct success
-to zero grounded success ($-12.50$ \pp{}, interval $[-18.33,-6.67]$). That aggregate
-loss came entirely from the no-retrieval stratum: A00 copied all 15 supplied tokens,
-whereas M16 copied none. Both routes already scored zero on every evidence-required
-stratum. It is therefore inaccurate to claim that RAG reduced this model's success
-on questions that needed evidence; the experiment instead shows that an
-always-grounded policy destroyed its one functioning direct behavior without
-creating evidence-task success.
-
-Granite-4.1-3B improved from 20.83\% to 44.17\% ($+23.33$ \pp{}, [10.00, 37.50]),
-and Qwen3-4B improved from 13.33\% to 42.50\% ($+29.17$ \pp{}, [16.67, 41.67]).
-SmolLM3 increased from 23.33\% to 34.17\%, but its interval
-$[-2.50,24.17]$ includes zero. Positive aggregate effects arose mainly from
-knowledge, memory, temporal-update, and authority-conflict tasks. The same grounded
-route frequently lost direct-route successes on no-retrieval and deleted/missing
-tasks. Hence the estimand is ``always grounded minus always direct'' under the
-frozen equal task mixture, not the benefit of retrieving only when retrieval is
-needed.
-
-All five grounded endpoints had higher observed generation-window GPU energy. The
-same-board increases were 146.72 J for Qwen3-0.6B, 119.53 J for Granite-4.1-3B,
-41.52 J for SmolLM3, and 171.71 J for Qwen3-4B. Grounding also increased mean input
-tokens substantially: for example, Granite-4.1-3B rose from 128.1 to 627.8 tokens,
-and Qwen3-4B from 128.4 to 760.0. These are per-assigned-query effects under the
-frozen prompts, not intrinsic or token-normalized model-efficiency rankings.
-
-\subsection{The Granite-4.0-1B Compatibility Failure}
-
-Granite-4.0-1B scored zero both directly and grounded. Inspection of all clean A04,
-A12, and A13 rows showed an identical 80-character sequence of exclamation marks;
-every output reached the 80-token ceiling and none parsed. The A04 and A13 energy
-endpoints also ran on different T4 boards. We therefore treat this pair as an
-observed frozen prompt/chat-template/runtime incompatibility. It removed one
-candidate from the useful online pool, but neither explains the policy-level
-calibration infeasibility by itself nor shows that the model family is generally
-incapable of RAG.
-
-\subsection{Retrieval, Memory, and Failure Layers}
-
-On the same board, A00 achieved 12.5\% while tiny BM25, dense, and hybrid routes
-each achieved zero. Their measured energy increases were 102.97, 95.70, and
-88.44 J/query, respectively, with intervals excluding zero. Again, the success
-difference is the loss of no-retrieval cases rather than a decline from positive
-evidence-task performance.
-
-Tiny flat, hierarchical, and graph-memory routes also scored zero and showed
-larger energy means than A00, but they ran on a different board; those energy
-differences are descriptive. Across the common grounded route, retrieval recovered
-the complete required evidence for most evidence-requiring queries, yet success
-remained generator-dependent. For example, two-hop evidence was frequently
-retrieved while Granite-4.1-3B and SmolLM3 still obtained zero strict success on
-that class. Retrieval completeness was therefore necessary but not sufficient.
-
-Failure decomposition reinforces this point. M18 parsed 96.67\% of outputs,
-passed the support guard on 74.17\%, and succeeded on 44.17\%. M20 parsed 100\%,
-passed support on 55.83\%, and succeeded on 34.17\%. A14 parsed 84.17\%, passed
-support on 67.50\%, and succeeded on 42.50\%. In contrast, A03 parsed 46.67\% but
-had zero support-qualified outputs. Sixty-four A03 outputs failed parsing and 40
-contained citation representations that did not satisfy exact ID membership. The
-frozen interface contract, not retrieval alone, was a major bottleneck.
-
-\subsection{Robustness Is a Floor Effect}
-
-\input{tables/robustness}
-
-The selected policy used A03 for every query under all four corruptions and achieved
-zero strict success, matching its clean zero. The resulting zero degradation is
-uninformative: it reflects a floor, not retained capability. A00 remained at 12.5\%
-because it ignores evidence, while A13 remained at zero because of the compatibility
-failure. The synthetic compromise marker was never emitted, but a zero marker rate
-alongside zero policy efficacy cannot support a broad prompt-injection robustness
-claim.
+Under all four corruptions, the selected policy again used A03 and remained at zero
+strict success. A zero degradation from a zero clean reference is a floor effect,
+not robust competence. A00 remained at 12.5\% because it ignores evidence, while
+A13 remained at zero because of the compatibility failure. The synthetic
+compromise marker was never emitted, but that fact does not establish general
+prompt-injection resistance.

@@ -22,9 +22,11 @@ rows.
 
 \subsection{Rebuild Procedure}
 
-The repository script \path{scripts/build_manuscript_assets.py} reads only the
-checksum-verified release and deterministically regenerates manuscript CSVs, tables,
-and vector figures. \path{scripts/validate_manuscript.py} checks numeric claims,
+The repository script \path{scripts/build_manuscript_assets.py} reads the
+checksum-verified release, reconstructs the frozen deterministic test metadata, and
+regenerates manuscript CSVs, tables, and vector figures. This includes pool oracles,
+headroom, task-aware choices, failure layers, interaction contrasts, and threshold
+sensitivity; it never invokes a model. \path{scripts/validate_manuscript.py} checks numeric claims,
 bibliography keys, references, measurement-boundary language, artifact existence,
 and protocol-amendment disclosure. The complete source is compiled with Tectonic
 0.16.9 using \path{paper/manuscript/main.tex}; the same sources are compatible
@@ -38,6 +40,8 @@ Hugging Face dataset \path{Shanmuk4622/E2AM-MemRAG-Traces}. Repository visibilit
 must be checked at submission time. If the trace repository is not public, the
 authors should provide a checksum-identical anonymous archive or grant reviewer
 access rather than claiming unrestricted availability.
+
+\input{tables/trace_integrity}
 
 \subsection{Author Contribution and Conflicts}
 

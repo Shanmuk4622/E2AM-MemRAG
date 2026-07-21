@@ -1,68 +1,79 @@
 \section{Experimental Protocol}
 \label{sec:protocol}
 
-\subsection{Execution and Provenance}
+\subsection{Frozen Execution and Provenance}
 
-The study ran in Kaggle GPU sessions with exactly one visible NVIDIA T4 per
-scientific worker. A dual-T4 allocation was permitted, but the device mask was set
-before importing CUDA-aware packages. Stage 00 froze source/configuration hashes,
-model and encoder revisions, prompts, route specifications, decoding parameters,
-seed 4622, and the Python/Torch/CUDA environment. Each later stage rejected a
-changed experiment ID, specification hash, source bundle, environment contract, or
-worker lane.
+Scientific workers ran in Kaggle sessions with one visible NVIDIA T4; the device
+mask was set before importing CUDA-aware packages. The initial stage froze source
+and configuration hashes, route specifications, prompts, model and encoder
+revisions, decoding, seed 4622, and the Python/Torch/CUDA environment. Later stages
+rejected a changed experiment identifier, specification hash, source bundle,
+environment contract, or worker lane. Deterministic decoding used FP16, greedy
+generation, an 80-token output limit, and a 1,536-token context budget. OOM or
+context overflow was recorded rather than silently changing precision or budget.
 
-Large model snapshots were verified inputs and were not uploaded as results.
-Replayable traces and checkpoints were written as immutable content-addressed
-objects. A worker pointer was published only with a closure whose dependencies
-already existed remotely. The final release was restored into a fresh root and
-verified by SHA-256 before the completion marker was published. Completion was
-kept separate from the hypothesis result.
+The pilot evaluated 22 actions on 80 queries and pruned five non-anchor actions by
+the frozen rule. Router fitting used 11 eligible actions over 400 train, 120
+calibration, and 80 validation queries, yielding 4,400, 1,320, and 880 route--query
+traces. The test matrix was not used for fitting, calibration, thresholding, or
+fallback selection. The clean release executes each of 17 retained actions on all
+120 test queries once, for 2,040 traces.
 
-The pilot evaluated all 22 declared routes on 80 questions. The 17-route clean
-matrix retained all mandatory anchors and pruned only five nonanchors using the
-pilot rule. Router training then used 11 deployable tiny/small routes across 400
-train, 120 calibration, and 80 validation queries: 4,400, 1,320, and 880 route-query
-traces, respectively. The test matrix was not used for fitting, calibration,
-thresholding, or safe-route selection.
+\subsection{Two-Stage Controller}
 
-\subsection{Validation Infeasibility and Protocol Amendment}
+Stage 0 uses eight query-available features---length, character and digit counts,
+entity codes, and temporal, conflict, memory, and multi-hop cues---to score direct
+actions. If no direct action clears the decision constraints, one charged
+BM25/memory-metadata probe supplies eight retrieval statistics, including top
+scores, score gaps, counts, and authority values. Stage 1 then scores non-direct
+actions. If no action qualifies, the controller invokes a validation-selected
+fail-closed fallback.
+
+For each of five grouped-bootstrap seeds, a histogram gradient-boosting classifier
+predicts strict success. Isotonic regression calibrates each predictor on the
+calibration split, following the general requirement that decision confidence be
+empirically calibrated \cite{GuoEtAl2017Calibration}. Separate quantile regressors
+predict log energy and latency at $q=0.90$. The controller uses the minimum
+calibrated success probability across bootstrap members and mean exponentiated cost
+predictions. Among routes above threshold $\tau$ with predicted latency at most
+12 s, it chooses the lowest predicted generation energy. This reject-option design
+is related to selective prediction \cite{GeifmanElYaniv2019SelectiveNet}, but its
+fallback is not evidence of safety; it is only the declared completion behavior.
+
+\subsection{Frozen Constraints and Amendment}
 \label{sec:amendment}
 
-The original frozen threshold grid was
-$\{0.60,0.65,0.70,0.75,0.80,0.85\}$. A threshold was feasible only if validation
-strict success was at least 0.80, execution coverage at least 0.90, and abstention
-at most 0.20. Every original candidate produced 8.75\% success, 100\% execution
-coverage, and 18.75\% abstention. Thus no threshold was feasible, and the original
-implementation stopped before creating a policy artifact.
+A validation threshold was feasible only if strict success was at least 0.80,
+execution coverage at least 0.90, and abstention at most 0.20. The 80\% value was a
+predeclared deployment utility requirement, not a prediction of attainable model
+performance. It was intentionally not relaxed after observing the routes. Every
+threshold in the original grid $\{0.60,0.65,\ldots,0.85\}$ produced 8.75\%
+validation success, 100\% coverage, and 18.75\% abstention, so the validation
+constraints were infeasible and the original implementation stopped without a
+policy artifact.
 
-After observing validation infeasibility but before accessing test labels, the
-study recorded amendment
-\modelid{stage06-threshold-completion-separation-v1}. It extended the audit grid to
-0.90, 0.95, and 1.00; all remained infeasible with the same validation outcomes.
-The amendment then froze $\tau=1.0$ as a fail-closed completion policy, recorded
-\texttt{validation\_feasible=false}, and explicitly set
-\texttt{hypothesis\_claim\_allowed\_when\_infeasible=false}. This preserved the
-distinction between completing the frozen test matrix and claiming router success.
-We report the amendment because describing the eventual fallback as an ordinary
-validation-selected operating point would be misleading.
+After validation infeasibility was known but before test-label access, amendment
+\modelid{stage06-threshold-completion-separation-v1} extended the audit grid to
+0.90, 0.95, and 1.00. Outcomes were unchanged. The amendment froze $\tau=1.0$ to
+permit completion of the already specified test matrix, recorded
+\texttt{validation\_feasible=false}, and prohibited a positive hypothesis claim.
+The fallback A03 was selected on validation by strict success, then median measured
+GPU energy, then route identifier. We retain the amendment as a protocol deviation
+and never describe this fallback as validation-feasible or empirically safe.
 
-The safe route itself was selected on validation by highest strict success, then
-lowest median measured GPU energy, and then route ID. Under the fail-closed policy,
-actions unable to clear the conservative threshold invoke that safe route.
+\subsection{Confirmatory Estimands}
 
-\subsection{Confirmatory Estimands and Gates}
-
-For test question $q$, let $\pi(q)$ be the frozen policy route and $b$ the fixed
-safe baseline. The paired success and energy estimands are
+For test query $i$, let $\pi(i)$ be the frozen policy action and $b$ the fixed A03
+fallback baseline. The paired estimands are
 
 \begin{align}
-\Delta_S &= \frac{1}{N}\sum_{q=1}^N
-\left(S_{q,\pi(q)}-S_{q,b}\right), \\
-\Delta_E &= \frac{1}{N}\sum_{q=1}^N
-\left(E_{q,\pi(q)}-E_{q,b}\right).
+\Delta_S &= \frac{1}{N}\sum_{i=1}^{N}
+\left(S_{i,\pi(i)}-S_{i,b}\right), \\
+\Delta_E &= \frac{1}{N}\sum_{i=1}^{N}
+\left(E_{i,\pi(i)}-E_{i,b}\right).
 \end{align}
 
-The confirmatory claim required all four conditions:
+The confirmatory claim required all four gates:
 
 \begin{equation}
 \begin{aligned}
@@ -72,45 +83,37 @@ L_{.95}(\Delta_S)&\geq-0.03, & U_{.95}(\Delta_E)&<0, \\
 \label{eq:gates}
 \end{equation}
 
-Quality non-inferiority alone is not sufficient. In particular, equality at zero
-success can pass the relative margin without preserving useful quality.
+If policy and baseline select the same trace, both paired effects are identities at
+zero. Passing the formal non-inferiority margin in that case does not demonstrate
+preservation of useful quality; energy reduction still requires a strictly
+negative upper interval bound.
 
-\subsection{Uncertainty and Secondary Analyses}
+\subsection{Uncertainty and Diagnostic Analyses}
 
-Intervals use 10,000 percentile bootstrap replicates with seed 4622. Each replicate
-resamples whole scenario IDs and retains paired route outcomes. Because every test
-scenario contributes one query, this is a paired nonparametric bootstrap over 120
-scenarios. The 2.5th and 97.5th percentiles form the reported interval. No p-values
-are computed.
+Paired 95\% intervals use 10,000 percentile-bootstrap replicates with seed 4622,
+resampling whole scenario IDs \cite{EfronTibshirani1994Bootstrap}. They quantify
+variation across the frozen questions, not decoding or repeated-hardware variance.
+The predeclared analyses cover policy--baseline effects, matched
+grounded-minus-direct effects, and route-level contrasts.
 
-Secondary analyses estimate matched grounded-minus-direct effects for success,
-energy, latency, citation recall, and abstention; route-level mechanism contrasts;
-and condition-minus-clean success effects. These intervals are exploratory and are
-not multiplicity-adjusted. They quantify variation across the frozen questions,
-not stochastic decoding or repeated hardware runs.
+After the confirmatory failure, we derived the action-pool oracle, routing
+headroom, unique successes, generator interaction contrasts, task-aware oracle,
+retrieval-to-utilization decomposition, and answer-F1 threshold sensitivity from
+the same immutable traces. These are explicitly exploratory and are not
+multiplicity-adjusted. No model was rerun and no outcome was replaced.
 
-\subsection{Clean and Robustness Evaluation}
+\subsection{Robustness and Hardware Assignment}
 
-Every retained clean route executes all 120 test questions once with deterministic
-decoding, producing 2,040 trace rows. Route execution is route-major rather than
-randomized or interleaved. The robustness experiment evaluates three deployable
-anchors---A00 direct, A03 hybrid, and A13 grounded/guarded---under stale evidence,
-untrusted conflict injection, missing evidence, and deletion/duplicate ordering.
-This produces $3\times4\times120=1{,}440$ rows.
+The diagnostic corruption matrix evaluates A00 direct, A03 hybrid, and A13
+grounded/guarded under stale evidence, untrusted conflict injection, missing
+evidence, and deletion/duplicate ordering, for 1,440 traces. Because the selected
+policy has zero clean utility, its corruption deltas are interpreted only as a
+floor effect. The literal compromise marker is a narrow synthetic indicator, not a
+general injection detector.
 
-The corruption conditions were executed on separate T4 boards. Their energy means
-are therefore not compared across conditions. A substring-based compromise flag
-detects the literal marker used by the synthetic injection; it is not a general
-prompt-injection evaluator.
-
-\subsection{Hardware Comparability}
-
-Clean routes were distributed across four physical T4 boards. Four matched model
-pairs---Qwen3-0.6B, Granite-4.1-3B, SmolLM3-3B, and Qwen3-4B---used the same board
-within each pair. Granite-4.0-1B direct and grounded endpoints used different
-boards. Tiny BM25/dense/hybrid contrasts were same-board; the tiny memory routes
-were on a different board from A00. Accordingly, within-board paired energy
-effects receive the clearest interpretation. Cross-board, cross-model, and
-memory-versus-direct energy differences are descriptive and may include session,
-thermal, residency, and board effects. The primary policy--baseline comparison is
-unaffected because both sides reference the exact same A03 trace row.
+Clean routes span four physical T4 boards. Four matched pairs---Qwen3-0.6B,
+Granite-4.1-3B, SmolLM3-3B, and Qwen3-4B---are same-board within pair. The
+Granite-4.0-1B pair is cross-board. Tiny BM25, dense, hybrid, and direct endpoints
+share one board; the tiny memory routes do not. The policy and A03 baseline refer
+to the same stored trace on every query, so their identity comparison is unaffected
+by board assignment.

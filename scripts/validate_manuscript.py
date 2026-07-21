@@ -89,6 +89,10 @@ def evidence_audit(text: str) -> dict[str, Any]:
     overall = read_csv("overall_results.csv")[0]
     routes = {row["route_id"]: row for row in read_csv("route_statistics.csv")}
     models = {row["model_key"]: row for row in read_csv("model_transfer.csv")}
+    pools = {row["pool_id"]: row for row in read_csv("routability_pools.csv")}
+    task_oracles = {row["model_key"]: row for row in read_csv("task_aware_oracle.csv")}
+    utilization = {row["model_key"]: row for row in read_csv("retrieval_to_utilization.csv")}
+    cost_oracle = read_csv("success_preserving_cost_oracle.csv")[0]
     policy = json.loads((RAW / "stage06_frozen_policy.json").read_text(encoding="utf-8"))
 
     exact_checks = {
@@ -98,6 +102,29 @@ def evidence_audit(text: str) -> dict[str, Any]:
         "tiny_effect": math.isclose(float(models["tiny"]["success_diff_mean"]), -15 / 120, abs_tol=1e-12),
         "granite_effect": math.isclose(float(models["granite"]["success_diff_mean"]), 28 / 120, abs_tol=1e-12),
         "upper_effect": math.isclose(float(models["upper"]["success_diff_mean"]), 35 / 120, abs_tol=1e-12),
+        "deployable_actions": int(pools["deployable"]["actions"]) == 11,
+        "deployable_best_fixed": math.isclose(float(pools["deployable"]["best_fixed_success"]), 15 / 120, abs_tol=1e-12),
+        "deployable_oracle": math.isclose(float(pools["deployable"]["oracle_success"]), 15 / 120, abs_tol=1e-12),
+        "deployable_zero_headroom": math.isclose(float(pools["deployable"]["routing_headroom"]), 0.0, abs_tol=1e-12),
+        "offline_reference_oracle": math.isclose(float(pools["offline_reference"]["oracle_success"]), 87 / 120, abs_tol=1e-12),
+        "full_oracle": math.isclose(float(pools["all_retained"]["oracle_success"]), 88 / 120, abs_tol=1e-12),
+        "full_headroom": math.isclose(float(pools["all_retained"]["routing_headroom"]), 35 / 120, abs_tol=1e-12),
+        "cost_oracle_preserves_success": int(cost_oracle["baseline_successes"]) == 15
+        and int(cost_oracle["oracle_successes"]) == 15,
+        "cost_oracle_one_substitution": int(cost_oracle["selections_changed"]) == 1
+        and cost_oracle["selection_counts"] == "A00_tiny_direct:119;A03_tiny_hybrid:1",
+        "cost_oracle_saving": math.isclose(
+            float(cost_oracle["mean_saving_gpu_joules"]),
+            0.04890513398299845,
+            abs_tol=1e-12,
+        ),
+        "granite_task_oracle": math.isclose(float(task_oracles["granite"]["task_aware_success"]), 78 / 120, abs_tol=1e-12),
+        "peer_task_oracle": math.isclose(float(task_oracles["peer"]["task_aware_success"]), 67 / 120, abs_tol=1e-12),
+        "identical_retrieval_completeness": all(
+            math.isclose(float(row["retrieval_complete_rate"]), 72 / 90, abs_tol=1e-12)
+            and int(row["queries"]) == 90
+            for row in utilization.values()
+        ),
         "policy_tau": math.isclose(float(policy["tau"]), 1.0),
         "validation_infeasible": policy["validation_selection"]["feasible"] is False,
         "test_sealed_at_freeze": policy["test_accessed"] is False and policy["validation_selection"]["test_accessed"] is False,
@@ -117,6 +144,13 @@ def evidence_audit(text: str) -> dict[str, Any]:
         "robustness_floor": "floor effect" in text,
         "granite_compatibility": "compatibility failure" in text or "incompatibility" in text,
         "board_confounding": "cross-board" in text,
+        "routability_definition": "routing headroom" in text and "per-query oracle" in text,
+        "post_hoc_label": "post-hoc" in text,
+        "action_pool_diagnosis": "action-pool" in text,
+        "retrospective_status": "retrospective" in text,
+        "established_oracle_gap": "not a new algorithm-selection construct" in text,
+        "resident_eligibility": "coexist resident on one T4" in text and "15\\% free VRAM" in text,
+        "cost_headroom_qualified": "0.049 J/query" in text and "zero cost" in text,
     }
     if not all(required_statements.values()):
         raise RuntimeError(f"Required disclosure missing: {required_statements}")
@@ -128,6 +162,10 @@ def evidence_audit(text: str) -> dict[str, Any]:
         "whole-system energy was measured",
         "carbon emissions were measured",
         "the verifier proves factuality",
+        "safe route",
+        "safe fallback",
+        "complete telemetry",
+        "prevent parametric memorization",
     ]
     present = [phrase for phrase in forbidden if phrase.lower() in text.lower()]
     if present:

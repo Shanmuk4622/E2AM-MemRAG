@@ -1,97 +1,95 @@
-\section{Failure Analysis and Design Implications}
-\label{sec:failure}
+\section{Discussion: From Route Catalogs to Routable Pools}
+\label{sec:discussion}
 
-\subsection{Route Viability Precedes Router Optimization}
+\subsection{Separate Action-Space Failure from Learning Failure}
 
-The router failure was not simply a poor choice of $\tau$. Validation success was
-8.75\% at every candidate threshold from 0.60 through 1.00. One deployable family
-had no evidence-task success; the other produced a repeated, unparsable sequence
-under the frozen integration. No calibration method can create a useful operating
-point when every feasible action is weak or operationally incompatible. A practical
-router-development pipeline should therefore impose a precondition: at least two
-deployable actions must demonstrate nontrivial, query-dependent strict success
-before policy fitting begins. If the condition fails, the correct output is an
-infeasible action pool, not a forced router leaderboard entry.
+The central diagnostic is a separation of failure loci. A learned controller can
+fail because its features, labels, calibration, or decision rule are inadequate.
+It can also fail because its candidate set does not contain a useful conditional
+choice. The first is a learning problem; the second is an action-space problem.
+On the sealed resident-eligible matrix, zero routing headroom proves the latter for
+strict success. The policy's universal A03 fallback adds a learning-and-selection failure,
+but replacing the classifier alone cannot create successes absent from every
+eligible alternative.
 
-The exact-matrix evaluation also clarifies what happened on test. The policy did
-not prospectively discover that A03 was optimal for every question; it invoked the
-same safe fallback because no predicted action cleared the fail-closed threshold.
-This distinction matters when diagnosing routing systems and when comparing them
-with simple baselines \cite{LiEtAl2026LLMRouterBench}.
+This distinction suggests a routing-readiness order. First validate each
+model--prompt--runtime interface. Next measure individual route capability. Then
+compute success unions, unique contributions, and oracle headroom. Only after
+complementarity is present should one test whether decision-time features predict
+which route will help. Physical cost comparison and constrained policy optimization
+follow, not precede, those checks. A route catalog with many names is not necessarily
+a diverse action pool in outcome space.
 
-\subsection{Grounding Is a Generator--Task Interaction}
+\subsection{A Deployment Requirement Is Not an Attainability Claim}
 
-The aggregate transfer effects conceal sharp task interactions. Always grounding
-helped the 3B/4B generators on several evidence-requiring classes while removing
-some direct successes on no-retrieval and deleted/missing cases. For the 0.6B model,
-it removed the only successful stratum and failed to unlock any other one. An
-adaptive system therefore needs both a capable grounded route and a reliable
-retrieval-need signal. ``Small model'' is too coarse an explanatory variable;
-prompt compliance, context use, instruction tuning, tokenizer/chat templates, and
-task structure jointly determine whether evidence becomes useful.
+The frozen 80\% success floor was an operating requirement, whereas the 12.5\%
+oracle ceiling is an empirical property of the eligible test matrix. Conflating the
+two would make the threshold appear to be a tuning error. The correct inference is
+that the pool cannot satisfy the declared requirement even with label access. A
+different application may choose another requirement, but the ceiling remains
+useful: it shows exactly which requirements are unattainable without changing the
+action set.
 
-This finding also limits the common practice of reporting one RAG-minus-direct
-average. Such an average depends on the task mixture. Under traffic dominated by
-knowledge or temporal questions, the larger grounded endpoints would look more
-favorable; under direct-copy or valid-abstention traffic, always-grounded routes
-would look worse. Deployment claims require either a representative workload or
-stratified reporting.
+At the same time, a positive oracle gap would not guarantee a successful router.
+The oracle sees outcomes; a deployment policy sees query and probe features. Future
+work must demonstrate that complementary successes are predictable out of sample
+and that the resulting gains survive policy overhead. The audit is a necessary
+filter, not a replacement for prospective evaluation.
 
-\subsection{The Interface Is Part of the System}
+\subsection{Grounding Should Be Conditional on Both Need and Capability}
 
-Strict success exposed output-interface failures that answer-only evaluation would
-blur. The Granite-4.0-1B repetition failure occurred before semantic evaluation.
-A03 often produced superficially citation-like values that did not match exact
-retrieved IDs. The deterministic guard then rejected unsupported or malformed
-outputs. These are not cosmetic parser errors: a production evidence system needs
-machine-actionable citations and predictable abstention. Still, exact-ID scoring
-can be harsher than human recoverability, so future work should separate schema
-conformance from semantic citation entailment instead of treating either as the
-other.
+The matched pairs explain why neither ``always retrieve'' nor ``never retrieve'' is
+an adequate general policy. Direct behavior covers the supplied-token class and,
+for several references, correct abstention on deleted or missing facts.
+Composite-grounded endpoints add successes in several evidence-required classes
+for capable generators but lose some evidence-free successes. Because retrieval,
+memory, prompting, and the deterministic guard change jointly, the average
+composite-grounded-minus-direct effect changes with workload composition and is not
+an isolated retrieval effect.
 
-The observed failure suggests a mandatory compatibility gate per
-model--prompt--runtime triple: validate the chat template, schema adherence,
-termination behavior, and citation serialization before collecting expensive
-route matrices. A compatibility failure should create a new versioned experimental
-specification rather than a silent prompt repair after test access.
+The task-aware oracle makes the design implication concrete. For capable reference
+generators, conditional grounding improves success and reduces generation energy
+relative to always grounding. For Qwen3-0.6B, the composite-grounded endpoint never
+adds an evidence-task success, so recognizing retrieval need alone is insufficient; the
+system must also know whether the selected generator can use the retrieved
+contract. This supports generator-conditional evidence policies rather than a
+single model-agnostic RAG switch.
 
-\subsection{Measured Energy Is Not Total RAG Energy}
+\subsection{The Interface Is Part of the Action}
 
-Every grounded endpoint increased the energy observed during generation, consistent
-with longer prompts and, frequently, longer outputs. This does not imply that the
-reported difference equals the total energy cost of RAG. CPU dense encoding,
-lexical search, memory traversal, routing, and verification are absent from the
-energy quantity. Nor are host idle power, storage, cooling, and network transfers.
-The result supports a narrower statement: under these frozen routes and same-board
-matched pairs, generation itself consumed more selected-board energy when the
-grounded prompt was used.
+Three eligible Granite-4.0-1B routes produced no parseable output. Several tiny
+routes retrieved evidence but serialized citations that the exact-ID guard could
+not accept. These are operational failures, not cosmetic parser details: an
+evidence system needs machine-actionable outputs and predictable abstention.
+However, strict syntax can reject an answer whose intent a human could recover.
+Reporting parse, answer, citation, support, and strict layers separately prevents
+that construct choice from being hidden.
 
-Future evaluations should add synchronized CPU/host power measurement, idle-power
-subtraction where appropriate, repeated interleaved trials, and an explicit
-boundary diagram. Reporting per-query energy together with token counts, latency,
-and useful successes would make overhead and output-length effects more legible.
+A low-cost compatibility screen should therefore precede full route collection.
+It should test chat-template application, schema adherence, termination, citation
+serialization, and representative context lengths. If the integration changes,
+the route specification changes; repairing it after sealed evaluation should create
+a new version rather than overwrite the trace.
 
-\subsection{Robustness Requires a Nonzero Clean Reference}
+\subsection{Cost Claims Must Follow the Measurement Boundary}
 
-A zero corruption delta is meaningful only when the clean system performs the
-task. Here the selected route began at zero, so the corruption study cannot
-distinguish stable failure from robust competence. A better robustness gate would
-first require a minimum clean utility for each evaluated anchor, then report both
-absolute corrupted success and paired degradation. Attack-specific compromise
-metrics should likewise be presented as narrow detectors, not substitutes for
-task success or general adversarial robustness.
+The study supports a narrow physical statement: under the frozen same-board pairs,
+the composite grounded prompt used more selected-T4 energy during generation than
+the direct prompt. It does not establish total RAG energy, because retrieval,
+embedding, memory traversal, routing, verification, and host overhead were excluded.
+Nor does the strong energy--duration association isolate the cause of the overhead.
 
-\subsection{Actionable Recommendations}
+The conditional-oracle result also cautions against reporting only per-invocation
+RAG overhead. An expensive grounded action can lower workload-average energy when
+it is invoked selectively and replaces wasteful always-on grounding. Credible
+deployment studies should report the invocation policy, task mixture, useful
+successes, tokens, latency, and a clearly bounded energy quantity together.
 
-The evidence supports five concrete design rules:
+\subsection{Negative Results Need Completion Without Reinterpretation}
 
-\begin{enumerate}
-    \item gate model/chat-template/schema compatibility before route benchmarking;
-    \item establish generator- and task-specific grounding value before training a
-    controller;
-    \item treat validation infeasibility as a first-class result with a fail-closed
-    deployment state;
-    \item measure and label energy boundaries precisely, and avoid causal energy
-    comparisons across unbalanced boards or sessions;
-    \item require nonzero clean utility before interpreting robustness deltas.
-\end{enumerate}
+The Stage-06 amendment permitted artifact completion while forbidding a positive
+claim. That separation is important. Crashing on validation infeasibility would
+have hidden the action-space diagnosis; silently relaxing the success requirement
+would have contaminated the confirmatory test. A fail-closed completion state,
+immutable traces, and a post-hoc analysis label allow the negative result to remain
+scientifically useful without turning it into a successful router after the fact.

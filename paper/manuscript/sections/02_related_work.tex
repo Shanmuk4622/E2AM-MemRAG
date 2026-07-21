@@ -1,87 +1,99 @@
-\section{Related Work}
+\section{Related Work and Unresolved Gap}
 \label{sec:related}
 
-\subsection{Retrieval-Augmented and Adaptive Generation}
+\subsection{Adaptive Retrieval and Composite Routing}
 
-RAG combines a parametric generator with retrieved non-parametric evidence
-\cite{Lewis2020RAG}. Sparse retrieval remains a strong and interpretable baseline;
-our lexical routes implement the BM25 probabilistic relevance formulation
-\cite{RobertsonZaragoza2009BM25}. Dense passage retrieval and sentence-level
-bi-encoders provide complementary semantic signals
-\cite{KarpukhinEtAl2020DPR,ReimersGurevych2019SBERT}. The hybrid routes in this
-study fuse sparse and dense ranks and then perform a bounded deterministic second
-hop, rather than adding an independently trained reranker.
+RAG couples a parametric generator to retrieved non-parametric evidence
+\cite{Lewis2020RAG}. Adaptive systems subsequently made retrieval conditional:
+FLARE retrieves around uncertain continuations \cite{JiangEtAl2023FLARE},
+Adaptive-RAG selects among retrieval depths \cite{JeongEtAl2024AdaptiveRAG}, and
+Self-RAG learns retrieval and critique decisions \cite{AsaiEtAl2024SelfRAG}.
+Parallel work routes among language models to trade quality against monetary or
+computational cost \cite{ChenZahariaZou2024FrugalGPT,DingEtAl2024HybridLLM,
+OngEtAl2024RouteLLM}.
 
-Always-on retrieval is not universally optimal. FLARE initiates retrieval when a
-model encounters uncertain future content \cite{JiangEtAl2023FLARE}; Adaptive-RAG
-routes questions among no-retrieval, single-step, and iterative strategies based on
-estimated complexity \cite{JeongEtAl2024AdaptiveRAG}; and Self-RAG learns retrieval
-and critique tokens to regulate evidence use \cite{AsaiEtAl2024SelfRAG}. These
-systems motivate conditional grounding, but they do not establish that a compact
-generator receives a positive quality--energy return from a particular evidence
-contract. \system{} instead freezes the generator-route combinations and measures
-their paired effects before evaluating a router.
+Our headroom statistic is not a new algorithm-selection construct. Per-instance
+algorithm selection has long compared a single best solver with a label-aware
+virtual best solver \cite{Rice1976AlgorithmSelection,
+LindauerEtAl2019AlgorithmSelection}. In contemporary LLM routing,
+LLMRouterBench explicitly treats model complementarity as the premise for routing
+and measures a remaining Oracle gap \cite{LiEtAl2026LLMRouterBench}. We adapt this
+established comparison to composite RAG actions scored by evidence-qualified
+utility. The contribution is the integrated five-question audit---interface
+compatibility, capability, complementarity, cost comparability, and constrained
+selectability---and its application to immutable traces, not the subtraction of
+oracle and single-best scores by itself.
 
-\subsection{External Memory and Evidence Quality}
+Recent methods join these ideas more directly. RAGRouter conditions generator
+selection on retrieved documents \cite{ZhangEtAl2025RAGRouter}; $R^3$AG separates
+retrieval quality from downstream generation utility when routing retrievers
+\cite{ZhaoEtAl2026R3AG}. X-Router chooses among direct, RAG, chain-of-thought, and
+combined pipelines \cite{WangEtAl2026XRouter}; RouteRAG selects text or graph
+evidence and reasoning actions \cite{GuoEtAl2026RouteRAG}; and RAG-on-a-Diet makes
+model choices at individual reasoning hops \cite{DingZhao2026RAGDiet}. These works
+establish retrieval-aware and composite-action routing as active research areas.
+Accordingly, our novelty is not the existence of a RAG router or an oracle gap. We
+ask whether the established complementarity diagnostic, combined with interface,
+physical-cost, and validation-feasibility checks, would have rejected the action
+pool before policy optimization.
 
-External memory extends the evidence problem from documents to persistent,
-time-indexed state. LongMem separates a frozen backbone from a long-term memory
-network \cite{WangEtAl2023LongMem}; MemoryBank studies acquisition, retrieval,
-updating, and forgetting \cite{ZhongEtAl2024MemoryBank}; and MemGPT frames tiered
-memory management as an operating-system problem \cite{PackerEtAl2023MemGPT}.
-Our flat, hierarchical, and graph/temporal routes are not new memory architectures.
-They are controlled mechanisms for testing whether organization, recency, entity
-links, and tombstones change strict grounded success under a fixed context budget.
+\input{tables/related_work_scope}
 
-Evaluation must distinguish answer plausibility from evidential support. KILT
-couples knowledge-intensive tasks with provenance \cite{PetroniEtAl2021KILT}, while
-ALCE evaluates citation correctness and completeness for generated answers
-\cite{GaoEtAl2023ALCE}. In the present benchmark, citations are exact identifiers
-in a generated evidence universe. The guard checks parseability, retrieved-set
-membership, exact required-evidence recall, precision, and forbidden evidence; it
-is deterministic and is not described as semantic entailment.
+\subsection{Context Utility and Evidence-Qualified Evaluation}
 
-Imperfect retrieval can introduce stale, conflicting, irrelevant, or adversarial
-context \cite{ParkLee2024RobustRALM}, and additional context may be detrimental
-even when it appears topically related \cite{OhThorne2023DetrimentalContexts}.
-These observations motivate our four corruption conditions and the decision to
-report abstention and clean-baseline efficacy alongside robustness deltas.
+The value of retrieved context depends on model capability, task, context length,
+and retrieval properties \cite{LiEtAl2025LaRA}. Irrelevant, misleading, or
+internally conflicting context can impair generation
+\cite{OhThorne2023DetrimentalContexts,ParkLee2024RobustRALM}, while ASTUTE RAG
+explicitly targets imperfect retrieval and parametric--context conflicts
+\cite{WangEtAl2025AstuteRAG}. Robustness methods such as RoseRAG and PRA-RAG address
+noise or retrieval corruption with learned and provable defenses
+\cite{LiuEtAl2025RoseRAG,TanEtAl2026PRARAG}. Our four corruptions are therefore a
+diagnostic negative control, not a new defense or a broad adversarial-robustness
+claim.
 
-\subsection{Routing, Calibration, and Abstention}
+Answer accuracy alone can hide unsupported generation. KILT links answers to
+provenance \cite{PetroniEtAl2021KILT}; ALCE evaluates citation correctness and
+completeness \cite{GaoEtAl2023ALCE}; and GaRAGe provides grounding annotations and
+deflection-oriented evaluation \cite{SorodocEtAl2025GaRAGe}. We combine answer,
+exact citation, abstention, parsing, and forbidden-evidence conditions in a single
+strict indicator so that a route cannot receive utility for an ungrounded correct
+string. The resulting metric is intentionally operational and harsher than human
+judgment; it does not establish semantic entailment.
 
-FrugalGPT showed that cascades can reduce API cost while preserving or improving
-task quality \cite{ChenZahariaZou2024FrugalGPT}. Hybrid LLM learns a quality-aware
-router between local and remote models \cite{DingEtAl2024HybridLLM}, and RouteLLM
-uses preference data to route between stronger and weaker endpoints
-\cite{OngEtAl2024RouteLLM}. Recent benchmark evidence further shows that router
-rankings depend strongly on the model pool and that sophisticated controllers can
-approach simple baselines when the pool is poorly separated
-\cite{LiEtAl2026LLMRouterBench}. These works primarily optimize monetary or model
-selection cost. Our action is a composite of generator, retrieval, memory, and
-verification choices, and the measured cost is physical GPU-board energy during
-generation.
+Synthetic testbeds provide experimental control but can exaggerate context-use
+patterns that do not survive realistic retrieval
+\cite{HagstromEtAl2025RealityCheck}. We therefore describe \bench{} as a mechanism
+identification testbed. It isolates failures under known evidence requirements; it
+does not estimate open-domain QA performance.
 
-The controller combines probability calibration with a reject option. Post-hoc
-calibration is essential when probabilities drive operational decisions
-\cite{GuoEtAl2017Calibration}, while selective prediction formalizes the trade-off
-between coverage and risk \cite{GeifmanElYaniv2019SelectiveNet}. We therefore report
-calibration, execution coverage, and abstention separately. A low Brier score at
-near-zero confidence is not interpreted as useful discrimination when all selected
-test outcomes fail.
+\subsection{External Memory}
 
-\subsection{Energy Reporting for Machine Learning}
+External-memory research ranges from separate long-term memory networks
+\cite{WangEtAl2023LongMem} and user-history stores \cite{ZhongEtAl2024MemoryBank}
+to tiered memory management \cite{PackerEtAl2023MemGPT}. More recent systems add
+hierarchical storage and updating \cite{KangEtAl2025MemoryOS}, learned memory
+operations \cite{YanEtAl2026MemoryR1}, and temporal graph structures with conflict
+resolution \cite{BanerjeeEtAl2026APEXMEM}. Our flat, hierarchical, and graph/temporal
+routes are deliberately simpler. They are controlled action variants used to test
+whether memory organization creates routable differences under a fixed prompt
+budget; they are not proposed as new memory architectures.
 
-Green AI argues that efficiency should be a first-class evaluation dimension
-\cite{SchwartzEtAl2020GreenAI}; related work documents the environmental and policy
-importance of computationally intensive NLP \cite{StrubellEtAl2019EnergyNLP} and
-calls for systematic energy and carbon reporting boundaries
-\cite{HendersonEtAl2020EnergyReporting}. Deployment-time inference is itself a
-substantial and workload-dependent energy source
-\cite{LuccioniEtAl2024PowerHungry}. Zeus demonstrates energy--time Pareto reasoning
-for GPU workloads \cite{YouEtAl2023Zeus}, although its primary setting is training.
+\subsection{Energy and Measurement Boundaries}
 
-Our measurement uses NVIDIA Management Library board-power queries
-\cite{NVIDIA2026NVML} and trapezoidal integration. The quantity does not include
-the host, CPU retrieval, storage, network, or cooling, and it is not converted to
-carbon. This narrower claim improves reproducibility but also limits what the
-energy results can establish.
+Green-AI work argues that computational cost should accompany predictive quality
+\cite{SchwartzEtAl2020GreenAI,StrubellEtAl2019EnergyNLP,
+HendersonEtAl2020EnergyReporting}, and inference can dominate the operational
+footprint of deployed models \cite{LuccioniEtAl2024PowerHungry}. For RAG specifically,
+Electro profiles retriever, retrieval-depth, and generator configurations in an
+accuracy--energy landscape \cite{PanEtAl2025Electro}; a controlled software
+engineering study examines energy-reduction techniques across RAG configurations
+\cite{GuoEtAl2026RAGEnergy}. These studies preclude a claim that energy-aware RAG
+configuration is new.
+
+Our distinction is narrower. We pair an explicit evidence-qualified outcome with
+physical T4 board-power integration during generation, disclose cross-board
+non-comparability, and use the resulting trace matrix to audit whether the action
+pool has a selectable quality--cost structure. The contribution is the
+pre-optimization feasibility diagnosis, not broader energy coverage or a new power
+instrumentation method.

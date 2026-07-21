@@ -1,0 +1,6 @@
+model_key,route_id,queries,retrieval_complete_rate,parse_rate,citation_complete_rate,answer_valid_rate,support_valid_rate,strict_success_rate
+tiny,M16_tiny_grounded_verified,90,0.8,0.32222222222222224,0.0,0.0,0.0,0.0
+small,A13_small_hybrid_verified,90,0.8,0.0,0.0,0.0,0.0,0.0
+granite,M18_granite_grounded_verified,90,0.8,0.9555555555555556,0.7777777777777778,0.5888888888888889,0.8222222222222222,0.5888888888888889
+peer,M20_peer_grounded_verified,90,0.8,1.0,0.4444444444444444,0.5111111111111111,0.6777777777777778,0.43333333333333335
+upper,A14_upper_hybrid_verified,90,0.8,0.8555555555555555,0.6888888888888889,0.5666666666666667,0.7333333333333333,0.5666666666666667

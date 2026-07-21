@@ -1,0 +1,16 @@
+\begin{table*}[t]
+\caption{Descriptive same-board grounding overhead. Deltas are grounded minus direct; $r(\Delta J,\Delta t)$ is the per-query Pearson association between energy and generation-time differences. Route-major, single-run execution precludes a causal decomposition.}
+\label{tab:energy-mechanism}
+\centering
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Generator & $\Delta$ input tok. & $\Delta$ output tok. & $\Delta$ generation s & $\Delta$ GPU J & $r(\Delta J,\Delta t)$ \\
+\midrule
+Qwen3 0.6B & +631.6 & +37.5 & +1.669 & +146.72 & 0.941 \\
+Granite 4.1 3B & +499.7 & +28.1 & +1.774 & +119.53 & 0.999 \\
+SmolLM3 3B & +499.4 & +8.4 & +0.630 & +41.52 & 0.996 \\
+Qwen3 4B Instruct & +631.6 & +33.0 & +2.592 & +171.71 & 1.000 \\
+\bottomrule
+\end{tabular}
+\end{table*}

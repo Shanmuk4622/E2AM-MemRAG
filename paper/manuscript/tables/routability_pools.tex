@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\caption{Post-hoc action-pool routability on the complete sealed-test matrix. The per-query oracle uses outcome labels and is an upper-bound diagnostic, not a deployable policy. Headroom is oracle utility minus the best fixed route.}
+\label{tab:routability-pools}
+\centering
+\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Pool & Actions & Best route & Best fixed (\%) & Oracle (\%) & Headroom (pp) \\
+\midrule
+Resident-eligible pool & 11 & A00 & 12.5 & 12.5 & 0.0 \\
+Granite 4.1 3B pair & 2 & M18 & 44.2 & 65.0 & 20.8 \\
+SmolLM3 3B pair & 2 & M20 & 34.2 & 55.8 & 21.7 \\
+Qwen3 4B pair & 2 & A14 & 42.5 & 55.8 & 13.3 \\
+Offline reference pool & 6 & M18 & 44.2 & 72.5 & 28.3 \\
+All retained routes & 17 & M18 & 44.2 & 73.3 & 29.2 \\
+\bottomrule
+\end{tabular}
+\end{table*}

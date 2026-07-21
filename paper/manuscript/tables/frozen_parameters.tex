@@ -1,0 +1,25 @@
+\begin{table*}[t]
+\caption{Frozen benchmark, retrieval, generation, and pilot-pruning parameters. Candidate depth is evaluated separately for knowledge and active-memory indexes; final context is bounded by the shared token budget.}
+\label{tab:frozen-parameters}
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+Component & Frozen setting & Value \\
+\midrule
+Benchmark & Scenario groups / task classes / seed & 800 / 8 / 4622 \\
+Split & Pilot / train / calibration / validation / test & 10 / 50 / 15 / 10 / 15\% \\
+Sparse retrieval & BM25 candidate depth; final depth & 8; 4 \\
+Dense retrieval & all-MiniLM-L6-v2, mean-normalized; candidate/final depth & 8 / 4 \\
+Hybrid fusion & Equal-list reciprocal-rank fusion constant; final knowledge depth & 60; 4 \\
+Second hop & Expand dataset aliases found in first-hop evidence; retain final depth & bounded; 4 \\
+Memory & Flat dense; hierarchical latest-per-entity; graph linked-recency/fusion & at most 4 events \\
+Prompt budget & Retrieved-context budget / maximum generated tokens & 1,536 / 80 \\
+Decoding & FP16 model load; greedy decoding & \texttt{do\_sample=false} \\
+Resident eligibility & 0.6B and 1B coexist on one T4; free VRAM; offload & $\geq15$\%; none \\
+Pilot retention & Mandatory anchors, or failure $\leq10$\%, success $\geq5$\%, energy present & pilot only \\
+Energy & NVML selected-board sampling around \texttt{model.generate()} & 50 ms \\
+Uncertainty & Query-cluster bootstrap replicates & 10,000 \\
+\bottomrule
+\end{tabularx}
+\end{table*}

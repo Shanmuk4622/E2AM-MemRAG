@@ -37,6 +37,33 @@ class ManuscriptTests(unittest.TestCase):
         self.assertIn("carbon", text)
         self.assertNotIn("end-to-end selected-gpu board-energy accounting", text)
 
+    def test_routability_diagnostics_match_frozen_matrix(self) -> None:
+        pools = {
+            row["pool_id"]: row
+            for row in VALIDATOR.read_csv("routability_pools.csv")
+        }
+        self.assertEqual(int(pools["deployable"]["actions"]), 11)
+        self.assertAlmostEqual(float(pools["deployable"]["best_fixed_success"]), 15 / 120)
+        self.assertAlmostEqual(float(pools["deployable"]["oracle_success"]), 15 / 120)
+        self.assertAlmostEqual(float(pools["deployable"]["routing_headroom"]), 0.0)
+        self.assertAlmostEqual(float(pools["offline_reference"]["oracle_success"]), 87 / 120)
+        self.assertAlmostEqual(float(pools["all_retained"]["oracle_success"]), 88 / 120)
+
+    def test_reviewer_sensitive_language_is_absent(self) -> None:
+        text = VALIDATOR.all_tex().lower()
+        for phrase in ("safe route", "safe fallback", "complete telemetry", "prevent parametric memorization"):
+            self.assertNotIn(phrase, text)
+
+    def test_success_preserving_cost_bound_is_not_overstated(self) -> None:
+        row = VALIDATOR.read_csv("success_preserving_cost_oracle.csv")[0]
+        self.assertEqual(int(row["baseline_successes"]), 15)
+        self.assertEqual(int(row["oracle_successes"]), 15)
+        self.assertEqual(int(row["selections_changed"]), 1)
+        self.assertAlmostEqual(float(row["mean_saving_gpu_joules"]), 0.04890513398299845)
+        text = VALIDATOR.all_tex().lower()
+        self.assertIn("zero success headroom", text)
+        self.assertNotIn("has zero cost headroom", text)
+
     def test_no_reference_or_bibliography_drift(self) -> None:
         text = VALIDATOR.all_tex()
         bib = VALIDATOR.bibliography_keys()

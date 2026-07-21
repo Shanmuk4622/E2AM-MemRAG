@@ -1,0 +1,17 @@
+\begin{table*}[t]
+\caption{Retrieval-to-utilization decomposition on the 90 evidence-required questions. Every grounded endpoint received identical ordered retrieved IDs; retrieval completeness checks required IDs against those retrieved IDs. Citation completeness is an output property and is therefore reported separately.}
+\label{tab:retrieval-utilization}
+\centering
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Generator & Retrieved (\%) & Parse (\%) & Cite all (\%) & Answer valid (\%) & Support valid (\%) & Strict (\%) \\
+\midrule
+Qwen3 0.6B & 80.0 & 32.2 & 0.0 & 0.0 & 0.0 & 0.0 \\
+Granite 4.0 1B & 80.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 \\
+Granite 4.1 3B & 80.0 & 95.6 & 77.8 & 58.9 & 82.2 & 58.9 \\
+SmolLM3 3B & 80.0 & 100.0 & 44.4 & 51.1 & 67.8 & 43.3 \\
+Qwen3 4B Instruct & 80.0 & 85.6 & 68.9 & 56.7 & 73.3 & 56.7 \\
+\bottomrule
+\end{tabular}
+\end{table*}

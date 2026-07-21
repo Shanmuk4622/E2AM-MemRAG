@@ -12,7 +12,7 @@ import html
 import json
 import math
 import statistics
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -489,23 +489,44 @@ def main() -> None:
 
     best_route = max(route_rows, key=lambda row: (row["success_rate"], -row["mean_gpu_joules"]))
     clean_audit, robust_audit = trace_audits
-    report = f"""# E2AM-MemRAG v3r1 results audit
+    report = f"""# E2AM-MemRAG v3r1 results and claim audit
 
 ## Release verdict
 
 The experiment is **complete and remotely verified**, but the predeclared
-confirmatory hypothesis **did not pass**. Quality non-inferiority and operating
-constraints passed; the required energy-reduction gate failed. Completion and
-hypothesis success are deliberately separate in the frozen protocol.
+confirmatory hypothesis **did not pass**. The formal non-inferiority and
+operating-constraint checks passed only because the selected policy reproduced
+the baseline trace exactly; they do not establish a useful quality-preserving
+router. The required energy-reduction gate failed.
 
-| Gate | Result |
-| --- | --- |
-| Experiment completion | PASS |
-| Fresh-root restore | PASS |
-| Quality non-inferiority | PASS |
-| Operating constraints | PASS |
-| Energy reduction | FAIL |
-| Confirmatory hypothesis | FAIL |
+| Gate | Result | Interpretation |
+| --- | --- | --- |
+| Experiment completion | PASS | Frozen releases restored and verified |
+| Fresh-root restore | PASS | All Stage-09 artifact checks passed |
+| Formal quality non-inferiority | PASS | Non-informative identity with the baseline |
+| Operating constraints | PASS | Test-time execution and accounting were complete |
+| Energy reduction | FAIL | Policy-minus-baseline energy was exactly 0 J/query |
+| Confirmatory hypothesis | FAIL | The conjunction of required gates was false |
+
+## The central diagnostic: was the action pool routable?
+
+Adapting the established single-best/virtual-best comparison, the 11-action
+resident-eligible pool had 12.5% best-fixed success and 12.5% post-hoc
+per-query oracle success: routing headroom was exactly **0.0 percentage points**.
+All 15 eligible successes came from `A00_tiny_direct`. In contrast, the six
+offline reference actions had 44.2% best-fixed success and a 72.5% oracle, or
+28.3 points of headroom. The complete 17-route matrix reached a 73.3% oracle.
+The subtraction is established; the contribution is its integration with
+interface, capability, physical-cost, and validation-feasibility checks for
+composite RAG actions.
+
+Eligibility required the 0.6B and 1B checkpoints to coexist on one T4 with at
+least 15% free VRAM and no offload. The 3B/4B references were loaded sequentially,
+and dynamic loading was outside route latency. A label-aware per-query cost bound
+that preserves all 15 successes chooses A03 once and saves only 0.049 J/query
+(0.089%). The pool therefore had zero success headroom, not mathematically zero
+cost headroom. These analyses are post hoc and do not change the confirmatory
+outcome.
 
 ## Primary policy result
 
@@ -515,20 +536,23 @@ queries. Strict support-qualified success was {pct(summary['policy_success']['me
 {pct(summary['policy_success']['high'])}); mean selected-GPU energy was
 {summary['policy_gpu_joules']['mean']:.2f} J/query (95% interval
 {summary['policy_gpu_joules']['low']:.2f} to {summary['policy_gpu_joules']['high']:.2f}).
-The paired policy-minus-baseline differences were exactly 0.00 for success and
-0.00 J for energy. Therefore the router reproduced the baseline rather than
-finding an energy-saving policy.
+The stored policy and baseline records are the same executions, so their paired
+differences are exactly 0.00 for success and 0.00 J for energy by identity. The
+policy did not discover an energy-saving decision rule.
 
-This is not an infrastructure failure: execution coverage was
-{pct(summary['execution_coverage'])}, every route had complete energy telemetry,
-and the clean release records zero execution failures.
+This is not an execution failure: coverage was
+{pct(summary['execution_coverage'])}, all {clean_audit['rows']} clean-test
+generation calls have selected-GPU board energy sampled every 50 ms around
+`model.generate()`, and the clean release records zero execution failures. CPU
+retrieval and embedding, memory traversal, routing, parsing, verification, storage,
+network, host and cooling energy, and carbon are outside that boundary.
 
 ## Route and generator findings
 
-The best clean-test route was `{best_route['route_id']}` at
-{pct(best_route['success_rate'])} strict success and
-{best_route['mean_gpu_joules']:.2f} J/query. The grounded Pareto frontier contains
-the `granite` and `peer` model families.
+The best route among all 17 retained endpoints was the offline, router-ineligible
+reference `{best_route['route_id']}` at {pct(best_route['success_rate'])} strict
+success and {best_route['mean_gpu_joules']:.2f} J/query. The grounded Pareto
+frontier contains the `granite` and `peer` model families.
 
 - Granite 3B grounding improved strict success by
   {ci_text(model_panel['models'][2]['grounded_minus_direct_success'], percentage=True)}
@@ -545,10 +569,19 @@ the `granite` and `peer` model families.
   and added {model_panel['models'][0]['grounded_minus_direct_gpu_joules']['mean']:.2f} J/query.
 
 The controlled tiny-model retrieval and memory routes all changed success from
-12.5% to 0% while adding approximately 88--117 J/query. The evidence therefore
-shows that retrieval/memory augmentation was generator-dependent and could be
-actively harmful under the frozen prompting, parsing, citation, and verification
-contract.
+12.5% to 0% while adding approximately 88--117 J/query. Those 15 direct successes
+came from the no-retrieval stratum; the composite-grounded endpoints lost them
+without adding strict success on evidence-required tasks. This is an end-to-end
+generator--prompt--parser compatibility result, not a universal claim that
+retrieval harms small models.
+
+## Retrieval-to-utilization audit
+
+The five grounded endpoints received identical ordered evidence lists for all
+120 test queries. Required evidence was retrieved completely for 72 of the 90
+evidence-dependent queries (80.0%), including 14 of 15 multi-hop queries. Yet
+strict grounded success on that 90-query stratum ranged from 0% to 58.9%, which
+locates the matched-panel divergence downstream of retrieval.
 
 ## Robustness interpretation
 
@@ -573,12 +606,13 @@ also 0%; the paper must not present this as a successful robustness result.
 
 ## Defensible paper framing
 
-The strongest paper is a controlled negative-result and systems-diagnosis study:
-**energy-aware routing fails when lightweight generator/grounding combinations do
-not produce separable strict-success signal, while grounding benefits remain
-strongly generator-dependent.** The contribution is the frozen benchmark,
-generation-window GPU-board energy accounting, calibrated routing protocol, and failure analysis--
-not a claim that the learned policy reduced energy.
+The strongest paper is a failure-first study of **action-pool routability**.
+Strict-success selection was mathematically unproductive inside the frozen resident-eligible pool even
+though the broader reference pool contained substantial query-level
+complementarity. The matched panel explains that contrast through
+generator-dependent grounding utility and positive generation-window energy
+increments. The contribution is the audit and mechanism analysis, not a claim
+that the learned policy reduced energy.
 
 Claims must remain bounded to this controlled synthetic benchmark, one visible T4
 per worker (four physical boards across clean lanes), selected-GPU board energy,
@@ -601,12 +635,35 @@ and broad real-world generalization are outside the evidence.
         "experiment_id": EXPERIMENT_ID,
         "release_complete": True,
         "hypothesis_pass": False,
+        "analysis_status": "confirmatory result frozen; routability and mechanism analyses are post-hoc descriptive",
         "hypothesis_gates": hypothesis,
         "primary_policy": overall_rows[0],
+        "policy_baseline_trace_identity": True,
         "best_clean_route": best_route,
         "grounded_pareto_frontier_model_keys": sorted(frontier),
+        "routability": {
+            "resident_eligible": {"actions": 11, "best_fixed_success": 0.125, "oracle_success": 0.125, "routing_headroom": 0.0},
+            "offline_reference": {"actions": 6, "best_fixed_success": 0.44166666666666665, "oracle_success": 0.725, "routing_headroom": 0.2833333333333333},
+            "all_retained": {"actions": 17, "best_fixed_success": 0.44166666666666665, "oracle_success": 0.7333333333333333, "routing_headroom": 0.29166666666666663},
+        },
+        "resident_eligibility": "0.6B and 1B checkpoints coexist on one T4 with >=15% free VRAM and no CPU/disk offload; 3B/4B references loaded sequentially; model loading excluded from route latency",
+        "success_preserving_cost_oracle": {
+            "baseline_successes": 15,
+            "oracle_successes": 15,
+            "mean_saving_gpu_joules": 0.04890513398299845,
+            "percent_saving": 0.08938346395029928,
+            "selection_counts": {"A00_tiny_direct": 119, "A03_tiny_hybrid": 1},
+            "analysis_status": "post-hoc label-aware descriptive bound",
+        },
+        "retrieval_to_utilization": {
+            "grounded_endpoints_with_identical_ordered_evidence": 5,
+            "queries_with_identical_ordered_evidence": 120,
+            "evidence_required_queries": 90,
+            "retrieval_complete_queries": 72,
+        },
         "trace_audit": trace_audits,
-        "claim_boundary": "controlled synthetic benchmark; one visible T4 per worker; four clean-lane boards; generation-window selected-GPU board energy",
+        "measurement_boundary": "selected-GPU board energy sampled during model.generate only; excludes CPU retrieval, embedding, memory traversal, routing, parsing, verification, storage, network, host, cooling, and carbon",
+        "claim_boundary": "controlled synthetic benchmark; one visible T4 per worker; four clean-lane boards; generation-window selected-GPU board energy; cross-board contrasts descriptive",
         "provenance": provenance,
     }
     (DERIVED / "results_summary.json").write_text(canonical_json(result_summary), encoding="utf-8")

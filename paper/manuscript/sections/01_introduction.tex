@@ -1,105 +1,100 @@
 \section{Introduction}
 \label{sec:introduction}
 
-Retrieval-augmented generation (RAG) gives a language model access to evidence
-that is fresher, more specific, or more auditable than its parameters alone
-\cite{Lewis2020RAG}. In practice, however, ``adding RAG'' is not one intervention.
-A deployed pipeline may decide whether to retrieve, choose sparse or dense search,
-expand a second hop, consult long-term memory, lengthen the prompt, invoke a larger
-generator, verify citations, or abstain. Each decision changes both the available
-evidence and the work performed. A quality-only evaluation can therefore reward a
-route that is too expensive to deploy, while a cost-only router can learn to choose
-cheap routes that do not satisfy the evidence contract.
+Learned routers are judged by the actions they select, but their attainable value
+is bounded before learning begins. If every candidate fails on the same queries, a
+perfect selector cannot improve utility over the best fixed action. If the only
+successful action is already the least expensive, cost-aware selection has no
+remaining trade-off to exploit. A router trained in either regime may be calibrated
+and computationally efficient while solving an empty decision problem. We call the
+missing prerequisite \emph{action-pool routability}: the pool must contain adequate
+capability, query-dependent complementarity, measurable costs, and a feasible rule
+for selecting among them.
 
-This tension is especially sharp for compact language models. Small generators are
-attractive for local and resource-constrained inference, but retrieved context is
-useful only if the generator can identify the relevant facts, follow the requested
-schema, cite the correct evidence, and withhold unsupported answers. Imperfect or
-distracting context can actively reduce answer quality
-\cite{OhThorne2023DetrimentalContexts,ParkLee2024RobustRALM}. Consequently, the
-effect of grounding is an interaction among the generator, retrieval mechanism,
-memory organization, prompt budget, and verifier; it is not a property of the
-retriever in isolation.
+This prerequisite is easy to overlook in retrieval-augmented generation (RAG).
+RAG is not a single switch. A composite action can change the generator, sparse or
+dense retrieval, second-hop expansion, external-memory organization, prompt length,
+citation format, deterministic verification, and abstention policy. Recent systems
+route among retrieval-augmented generators, retrievers, or direct/RAG/reasoning
+pipelines \cite{ZhangEtAl2025RAGRouter,ZhaoEtAl2026R3AG,WangEtAl2026XRouter,
+DingZhao2026RAGDiet}. These methods answer how to choose among useful options. They
+do not remove the need to establish that the eligible options are useful and
+complementary in the first place.
 
-Efficiency introduces a second ambiguity. Prior work has argued that computational
-cost should be reported alongside predictive quality
-\cite{SchwartzEtAl2020GreenAI,HendersonEtAl2020EnergyReporting}, and inference itself
-can be a material energy burden \cite{LuccioniEtAl2024PowerHungry}. Yet ``energy''
-may refer to a GPU board, a host, an entire cluster, or a carbon estimate. This
-study uses a deliberately narrow, reproducible quantity: board-power samples from
-the selected NVIDIA T4 integrated over the call to \texttt{model.generate()}.
-Retrieval runs on CPU and is charged to latency, not to the reported GPU-energy
-quantity. We make that boundary explicit because equating GPU board energy with
-whole-system energy or carbon would be scientifically incorrect.
+The issue is particularly acute for compact generators. Retrieved evidence helps
+only when a model can attend to it, produce the requested schema, cite the exact
+support, and abstain when support is absent. Model, task, context, and retrieval
+characteristics jointly affect this behavior \cite{LiEtAl2025LaRA}; imperfect or
+distracting context can reduce answer quality
+\cite{OhThorne2023DetrimentalContexts,ParkLee2024RobustRALM}. Grounding also adds
+work. Existing studies profile accuracy against tokens, latency, monetary cost, or
+energy \cite{SchwartzEtAl2020GreenAI,HendersonEtAl2020EnergyReporting,
+PanEtAl2025Electro,GuoEtAl2026RAGEnergy}. A scientific audit must therefore state
+both its utility contract and its measurement boundary rather than treating
+``quality'' or ``energy'' as interchangeable across systems.
 
-Model routing appears to offer a natural solution. Cascades and learned routers can
-trade quality against monetary or computational cost
-\cite{ChenZahariaZou2024FrugalGPT,DingEtAl2024HybridLLM,OngEtAl2024RouteLLM}. For a
-RAG system, however, a router must choose among composite actions rather than only
-among model endpoints. Its candidate pool must also contain routes whose success is
-predictable from information available at decision time. Calibration alone cannot
-create such separation: a controller that predicts failure for every action can be
-well calibrated but operationally useless.
+We retrospectively apply an integrated failure-first audit to a controlled
+diagnostic study of small-model RAG and memory actions. Adapting the established
+single-best/virtual-best comparison from algorithm selection, the key diagnostic
+compares the best fixed strict-success rate with a label-aware per-query oracle
+over the same action pool. Their difference is routing headroom. A zero value
+certifies that no selector can improve strict success on that matrix, regardless
+of model architecture or calibration. This oracle is deliberately post hoc: it
+diagnoses the opportunity present in sealed traces and is not reported as a
+deployable policy \cite{Rice1976AlgorithmSelection,
+LindauerEtAl2019AlgorithmSelection,LiEtAl2026LLMRouterBench}.
 
-We study these issues through \system, a frozen controlled experiment rather than
-a claim about open-domain question answering. \bench{} contains 800 deterministic
-scenario groups spanning direct copying, knowledge retrieval, personal memory,
-knowledge--memory composition, temporal updates, authority conflicts, two-hop
-retrieval, and deleted or missing evidence. Opaque identifiers prevent parametric
-memorization of the answers. Grouped splits isolate pilot pruning, router fitting,
-calibration, threshold selection, and a 120-question sealed test. A strict success
-indicator requires both answer correctness and exact satisfaction of the
-applicable citation, abstention, and forbidden-evidence conditions.
+The empirical testbed contains 800 generated scenario groups and eight task classes
+covering direct copying, document evidence, personal memory, composition, temporal
+updates, authority conflicts, two-hop evidence, and deleted or missing facts. Five
+pinned FP16 generators are compared through matched direct and composite-grounding
+endpoints. Strict success requires answer correctness, exact support, valid
+abstention, parseability, and exclusion of forbidden evidence. Physical telemetry
+is restricted to selected-board GPU energy during generation; it is not a measure
+of total RAG energy or carbon.
 
-The experiment separates three questions. First, a controlled mechanism matrix
-compares direct generation with BM25, dense, hybrid, and three memory organizations.
-Second, a five-generator matched panel applies the same direct and grounded route
-to Qwen3-0.6B, Granite-4.0-1B, Granite-4.1-3B, SmolLM3-3B, and
-Qwen3-4B-Instruct-2507. Third, a two-stage calibrated router uses only deployable
-tiny/small routes and is tested against a validation-selected fixed route. All
-clean test routes cover the same 120 questions, permitting paired, scenario-cluster
-bootstrap analysis.
-
-The outcome is informative precisely because it is not a routing success. The
-validation constraints were infeasible: no threshold reached the frozen 80\%
-success floor while satisfying coverage and abstention bounds. Before test labels
-were accessed, a documented amendment expanded the threshold grid and froze a
-fail-closed threshold of one, explicitly forbidding a positive hypothesis claim.
-The resulting policy selected its safe fallback, \route{A03\_tiny\_hybrid}, for all
-test questions. It achieved zero strict success and reproduced the baseline's
-143.16 J/query, so the predeclared energy-reduction hypothesis failed.
-
-The matched generator panel nevertheless exposes a substantial interaction.
-Grounding changed strict success by $-12.5$ \pp{} for Qwen3-0.6B,
-$+23.3$ \pp{} for Granite-4.1-3B, $+10.8$ \pp{} for SmolLM3-3B, and
-$+29.2$ \pp{} for Qwen3-4B. Every grounded endpoint had a higher observed
-generation-window GPU-energy mean; four of the five pairs were same-board. The
-small Granite-4.0-1B pair produced no
-parseable outputs under the frozen prompt/runtime contract, so it is treated as a
-compatibility failure rather than evidence of general model incapacity.
-
-The paper makes five contributions:
+The study asks four questions:
 
 \begin{enumerate}
-    \item a deterministic benchmark that isolates retrieval, memory, temporal,
-    authority, abstention, and citation requirements under grouped leakage controls;
-    \item a matched five-generator design that distinguishes generator-dependent
-    grounding effects from a flat model leaderboard;
-    \item an explicit generation-window GPU-energy protocol with complete telemetry,
-    paired latency measurement, and no carbon or whole-system extrapolation;
-    \item a calibrated composite-action routing protocol with test sealing,
-    abstention and coverage constraints, immutable artifacts, and fresh-root restore;
-    \item a reproducible negative result identifying validation infeasibility,
-    safe-route collapse, context-sensitive tiny-model behavior, a model-format
-    incompatibility, and robustness floor effects.
+    \item[\textbf{RQ1}] Does the resident-eligible action pool contain adequate capability
+    and query-dependent routing headroom?
+    \item[\textbf{RQ2}] When retrieved evidence is held constant, where does the
+    pipeline lose utility between retrieval, generation, citation, and verification?
+    \item[\textbf{RQ3}] How do generator and task class alter the success and
+    GPU-generation-energy effect of the composite grounding intervention?
+    \item[\textbf{RQ4}] Can the frozen learned controller satisfy its validation
+    constraints, and does its sealed-test behavior agree with the pool audit?
 \end{enumerate}
 
-The central conclusion is bounded but consequential: having a useful action is not
-enough if the frozen calibration constraints and decision rule cannot certify or
-select it. Here, sealed-test analysis later showed that direct route A00 was both
-more accurate and lower-energy than the universal fallback A03, even though no
-validation threshold satisfied the predeclared 80\% success floor together with
-coverage and abstention constraints. Before an energy-aware RAG controller is
-optimized, each generator's ability to use the grounding contract and the
-feasibility of the selection rule must be established; operational infeasibility
-must remain a reportable outcome rather than an exception to suppress.
+Across 11 resident-eligible actions, the best fixed route and the per-query oracle
+both succeeded on 15 of 120 questions (12.5\%); every
+success belonged to the same direct action. In contrast, the six offline reference
+actions had 28.3 \pp{} of headroom, and the full 17-route matrix had 29.2 \pp{}.
+Thus, complementarity existed in the experiment but was excluded from the learned
+controller's action set. The remaining analyses explain that separation. All five
+grounded endpoints received identical retrieved evidence, yet their evidence-task
+success ranged from 0\% to 58.9\%. For the capable reference generators, choosing
+direct operation on the two evidence-free task classes and grounding on the other
+six improved strict success and used less measured generation energy than always
+grounding. The learned controller, however, had no validation-feasible threshold
+and reproduced a zero-success fallback on every test query.
+
+The paper makes three contributions:
+
+\begin{enumerate}
+    \item an integrated failure-first protocol that adapts the established
+    single-best/oracle gap to evidence-qualified composite RAG actions and combines
+    it with interface, capability, physical-cost, and constraint-feasibility checks;
+    \item a controlled retrieval-to-utilization analysis showing that identical
+    evidence can yield sharply different schema, citation, answer, and strict-success
+    outcomes across generators and task classes;
+    \item a sealed negative case study that couples strict evidence-qualified
+    utility with a precisely bounded physical GPU-energy measure and preserves
+    validation infeasibility instead of repairing the policy after test access.
+\end{enumerate}
+
+The claim is not that a new routing algorithm outperforms prior work. It is that
+routing opportunity is an empirical property of the eligible action pool and
+should be audited before optimization. In this retrospective case, the audit
+provides an impossibility certificate for strict-success improvement within the
+resident-eligible matrix and identifies where utility complementarity remains.

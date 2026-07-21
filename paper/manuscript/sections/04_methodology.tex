@@ -1,119 +1,127 @@
-\section{E2AM-MemRAG Methodology}
-\label{sec:methodology}
+\section{Controlled Testbed and Measurement Contract}
+\label{sec:testbed}
 
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]{system_overview.png}
-    \caption{Experimental pipeline and measurement boundary. The red dashed region
-    is the only interval included in reported GPU energy. CPU retrieval and
-    post-generation checking are not assigned an energy value.}
-    \label{fig:system}
-\end{figure*}
+\subsection{HybridBench as a Diagnostic Testbed}
 
-\subsection{Frozen Model Panel}
+\bench{} is generated deterministically from seed 4622 without an LLM. It contains
+800 independent scenario groups, 100 for each of eight task classes. Every group
+defines a project, current and obsolete documents, an authority conflict, a
+project--dataset--scheduler chain, personal-memory events, and a tombstone. Answers
+and evidence identifiers are generated for the experiment. Their opacity minimizes
+answer recovery from pretrained parametric knowledge, while exact required and
+forbidden IDs make route failures observable.
 
-Table~\ref{tab:model-panel} lists the five generators. Exact repository commits
-are frozen to prevent upstream changes during parallel execution. Qwen3-0.6B and
-Granite-4.0-1B form the deployable online pair; they must coexist on a single T4
-without CPU/disk offload and leave at least 15\% free VRAM. Granite-4.1-3B,
-SmolLM3-3B, and Qwen3-4B are sequential reference models and are never router
-actions. References are loaded alone and unloaded before the online pair is
-restored. The model families are documented by their technical reports or exact
-model cards \cite{QwenTeam2025Qwen3,QwenModelCard06,QwenModelCard4B,
-GraniteTeam2025Granite40,GraniteTeam2026Granite41,BakouchEtAl2025SmolLM3}.
+The classes are: (i) copy a supplied token without retrieval; (ii) recover a fact
+from authoritative knowledge; (iii) recover an active memory; (iv) compose
+knowledge and memory; (v) resolve a temporal update; (vi) resolve an authority
+conflict; (vii) traverse two knowledge hops; and (viii) abstain when a private fact
+has been deleted or is missing. The first and last classes require no active
+evidence citation. The other six collectively form the 90-question
+evidence-required test stratum.
 
-All models use FP16, deterministic greedy decoding (\texttt{do\_sample=False}), a
-maximum of 80 new tokens, and a 1,536-token context budget. Thinking is disabled
-for checkpoints that expose that template option. A context overflow or OOM is
-recorded as failure; the runtime does not silently alter precision, batch size,
-context, or device placement.
+For a structurally representative temporal-update item, one scenario contains an
+archived document stating batch size 8 and a newer approved document stating batch
+size 16 for the same opaque project. The question asks for the current batch size;
+the strict label requires answer 16 and the newer document ID. Returning 8, citing
+only the archive, or citing both records fails at least one answer, recall, or
+precision condition. Other classes reuse the scenario's knowledge records, memory
+events, authority levels, links, or tombstone as controlled distractors. This
+illustration mirrors the generator rules but is not a disclosed test item.
+
+Scenario groups are split 10/50/15/10/15\% into pilot, train, calibration,
+validation, and test: 80, 400, 120, 80, and 120 queries. A scenario appears in one
+split only; task--split pairs use distinct template families. The leakage audit
+rejects group overlap, template-family overlap, normalized duplicates, and
+question-shingle Jaccard similarity at or above 0.95. A task-only train-majority
+sanity check answered 21 of 90 evidence-required test items (23.33\%). This is a
+construction diagnostic over low-cardinality task vocabularies, not a random-chance
+or real-world baseline. Test labels remained procedurally sealed until the policy,
+threshold, and confirmatory analysis plan were frozen; shared repository
+credentials make this a procedural rather than cryptographic guarantee.
+
+\subsection{Strict Outcome Contract}
+
+Each generator must emit a JSON-like object containing an answer, exact evidence
+IDs, and an abstention flag. Let $F_{ia}$ be answer token F1, $R_{ia}$ required-ID
+citation recall, $P_{ia}$ citation precision, $A_{ia}$ correct abstention, and
+$V_{ia}$ an indicator for successful parsing, no citation outside the retrieved
+set, and no forbidden evidence in either retrieved or cited IDs. Strict success is
+
+\begin{equation}
+S_{ia}=\mathbb{1}\!\left[
+\begin{aligned}
+&F_{ia}\geq0.8 \land R_{ia}=1 \land P_{ia}=1\\
+&{}\land A_{ia}=1 \land V_{ia}=1
+\end{aligned}
+\right].
+\label{eq:strict-success}
+\end{equation}
+
+For evidence-free tasks, recall is one and precision is one only for an empty
+citation set. A valid deleted/missing response must abstain or explicitly report
+insufficient evidence without exposing the tombstoned identifiers. The guard is
+deterministic. It checks syntax and ID membership; it does not prove semantic
+entailment. We report retrieval completeness separately from citation completeness
+so that evidence acquisition is not confused with evidence use.
+
+\subsection{Composite Routes}
+
+The predeclared catalog contains 22 actions. Pilot rules removed five non-anchor
+actions, leaving 17 for the clean test matrix. Retrieval variants include BM25
+\cite{RobertsonZaragoza2009BM25}, a frozen sentence-bi-encoder derived from dense
+retrieval practice \cite{KarpukhinEtAl2020DPR,ReimersGurevych2019SBERT}, and bounded
+hybrid retrieval using reciprocal-rank fusion \cite{CormackEtAl2009RRF}. Memory
+variants use flat recency-aware retrieval, hierarchical summary-plus-event
+retrieval, or graph/temporal traversal. Some actions append a deterministic support
+guard. These mechanisms are experimental controls, not newly proposed retrieval or
+memory algorithms.
+
+\input{tables/frozen_parameters}
+
+The matched panel compares each generator directly and under the same composite
+grounding intervention: hybrid knowledge retrieval, graph/temporal memory, bounded
+second-hop expansion, a common context budget, exact-citation prompting, and the
+deterministic guard. Because several components change together, the estimand is
+``composite grounding minus direct,'' not retrieval in isolation.
 
 \input{tables/model_panel}
 
-\subsection{Retrieval and Memory Mechanisms}
+The checkpoints are Qwen3-0.6B and Qwen3-4B-Instruct-2507
+\cite{QwenTeam2025Qwen3,QwenModelCard06,QwenModelCard4B}, Granite-4.0-1B and
+Granite-4.1-3B \cite{GraniteTeam2025Granite40,GraniteTeam2026Granite41}, and
+SmolLM3-3B \cite{BakouchEtAl2025SmolLM3}. All revisions, tokenizers, prompt budgets,
+and FP16 loading settings are immutable. Only the 0.6B and 1B families were
+available to the online controller; the 3B/4B endpoints are offline references.
+This eligibility rule was frozen from the resource contract: the 0.6B and 1B
+checkpoints had to coexist resident on one T4 with at least 15\% free VRAM and no
+CPU or disk offload. Reference checkpoints were instead loaded and unloaded in
+isolated sequential blocks. Dynamic model loading was outside the route-latency
+boundary and therefore could not be treated as a zero-cost online action. We call
+the resulting 11 actions the \emph{resident-eligible} or deployable pool; this is a
+specific concurrency-and-latency constraint, not a claim that 3B/4B models are
+undeployable in general.
 
-The sparse index implements BM25 with $k_1=1.5$ and $b=0.75$. Dense retrieval uses
-the pinned \modelid{sentence-transformers/all-MiniLM-L6-v2} checkpoint with explicit
-attention-mask mean pooling and $\ell_2$ normalization on CPU. Dot product ranks
-the normalized embeddings. Hybrid knowledge retrieval applies reciprocal-rank
-fusion (RRF),
+\subsection{GPU-Generation-Energy Boundary}
 
-\begin{equation}
-\operatorname{RRF}(d)=\sum_{m\in\{\mathrm{BM25},\mathrm{dense}\}}
-\frac{1}{60+r_m(d)},
-\label{eq:rrf}
-\end{equation}
-
-then expands only dataset aliases observed in the strongest first-hop evidence.
-The final evidence budget remains $k=4$; the second hop cannot widen the context.
-
-Memory uses the same sparse and dense signals. A flat route returns dense neighbors.
-The hierarchical route fuses rankings and retains the newest active event per
-entity. The graph/temporal route expands entity-linked history, removes tombstoned
-events, and ranks valid timestamps ahead of missing or malformed ones, followed by
-relevance and a deterministic ID tie-break. These mechanisms test organization and
-recency; they are not claimed as new learned memory architectures.
-
-\subsection{Route Matrix and Evidence Guard}
-
-Twenty-two routes were declared. A00--A15 span direct, sparse, dense, hybrid,
-flat-memory, hierarchical-memory, graph-memory, combined, and evidence-guarded
-mechanisms. M16--M21 complete the five-model matched panel. Pilot-only pruning
-removed A05--A07, A11, and A15; all ten direct/grounded endpoints remained mandatory.
-The sealed clean matrix therefore contains 17 routes $\times$ 120 questions.
-
-The matched grounded route is logically identical across generators: bounded
-hybrid knowledge, graph/temporal memory, the same evidence budget, and a deterministic
-guard. After generation, the guard rejects citations outside the retrieved set and
-rejects a retrieved-context answer that supplies no citation. A rejection is
-converted to an insufficient-evidence abstention before strict scoring. This is a
-syntactic and set-membership guard, not an LLM entailment judge.
-
-\subsection{Generation-Window GPU-Energy Measurement}
-
-Immediately before \texttt{model.generate()}, CUDA is synchronized and an NVML
-sampler starts at a 0.05-s interval. After generation, CUDA is synchronized again
-and sampling stops. One route-specific warm-up execution absorbs model loading and
-tokenizer initialization and is discarded before canonical rows are measured. No
-idle-power subtraction is applied. Given board-power samples $(t_j,P_j)$, energy is estimated by
-trapezoidal integration,
+We measure \gpuenergy{} by sampling the selected NVIDIA T4's NVML board-power
+reading every 50 ms and applying trapezoidal integration
 
 \begin{equation}
-E_i=\sum_{j=1}^{n_i-1}\frac{P_j+P_{j+1}}{2}(t_{j+1}-t_j).
+E_{ia}=\sum_{t=1}^{T-1}
+\frac{P_t+P_{t+1}}{2}(\tau_{t+1}-\tau_t).
 \label{eq:energy}
 \end{equation}
 
-At least two samples and a valid GPU UUID are required. Missing or non-finite
-energy blocks release-level inference rather than disappearing from a mean. Hub
-uploads occur outside the measured block.
+CUDA is synchronized immediately before and after \texttt{model.generate()}.
+Telemetry records physical GPU UUID, sample count, observed duration, input and
+output tokens, and failure status. NVML exposes device-level power observations
+\cite{NVIDIA2026NVML}; related GPU-energy instrumentation illustrates why sampling
+and boundary disclosure matter \cite{YouEtAl2023Zeus}.
 
-Equation~\eqref{eq:energy} measures the selected board during generation only.
-Dense encoding and retrieval run on CPU; prompt construction, parsing, evidence
-verification, and scoring are outside the energy window. Route latency is retrieval
-time plus the duration of the generator call. Policy latency adds the separately
-timed query/probe router components. Neither quantity is labeled whole-system
-energy, full end-to-end energy, or carbon.
-
-\subsection{Two-Stage Calibrated Router}
-
-The router considers only pilot-retained online routes. Stage 0 uses eight
-query-available features, including length, token/number counts, temporal/conflict
-terms, and memory cues, to score direct actions. If none clears the constraints,
-one charged BM25/memory-metadata probe supplies eight retrieval features such as
-top scores, score gaps, counts, authority, and recency. Stage 1 scores non-direct
-actions and otherwise chooses the validation-selected safe route.
-
-For each of five grouped bootstrap seeds, a histogram gradient-boosting classifier
-predicts success. Isotonic regression calibrates it on the calibration split.
-Separate histogram gradient-boosting regressors predict log energy and log latency
-with quantile loss at $q=0.90$. For action $a$, the conservative success estimate
-is the minimum calibrated probability across seeds,
-
-\begin{equation}
-\underline p_a(x)=\min_{b\in\{1,\ldots,5\}}\widehat p_{a,b}^{\mathrm{cal}}(x),
-\end{equation}
-
-while cost estimates are seed means of exponentiated quantile predictions. Among
-actions satisfying $\underline p_a(x)\geq\tau$ and predicted latency at most 12 s,
-the controller chooses the lowest predicted generation-window GPU energy. Reference
-models are excluded even when they lie on the offline Pareto frontier.
+The reported quantity excludes CPU retrieval and embedding, memory traversal,
+router computation, parsing, verification, storage, network transfer, host idle
+power, cooling, and carbon. Route latency is retrieval time plus generator-call
+duration; policy latency additionally includes its probe and controller components.
+We make same-board paired claims where possible. Cross-board and route-major
+comparisons remain descriptive because board, session, thermal, and residency
+effects were not randomized away.

@@ -1,0 +1,16 @@
+model_key,route_id,answer_f1_threshold,strict_success_rate
+tiny,M16_tiny_grounded_verified,0.5,0.0
+tiny,M16_tiny_grounded_verified,0.8,0.0
+tiny,M16_tiny_grounded_verified,1.0,0.0
+small,A13_small_hybrid_verified,0.5,0.0
+small,A13_small_hybrid_verified,0.8,0.0
+small,A13_small_hybrid_verified,1.0,0.0
+granite,M18_granite_grounded_verified,0.5,0.5583333333333333
+granite,M18_granite_grounded_verified,0.8,0.44166666666666665
+granite,M18_granite_grounded_verified,1.0,0.4166666666666667
+peer,M20_peer_grounded_verified,0.5,0.35
+peer,M20_peer_grounded_verified,0.8,0.3416666666666667
+peer,M20_peer_grounded_verified,1.0,0.325
+upper,A14_upper_hybrid_verified,0.5,0.4666666666666667
+upper,A14_upper_hybrid_verified,0.8,0.425
+upper,A14_upper_hybrid_verified,1.0,0.4083333333333333

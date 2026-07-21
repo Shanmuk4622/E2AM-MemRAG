@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\caption{Scope relative to representative routing and efficiency studies. ``Support-qualified'' means that utility explicitly depends on evidence use rather than answer quality alone. ``Pre-fit audit'' names the components evaluated before fitting a selector; LLMRouterBench includes complementarity and an Oracle gap, whereas our five-part audit additionally tests interfaces, absolute capability, physical-cost comparability, and constraint feasibility. This is not a performance ranking.}
+\label{tab:related-scope}
+\centering
+\small
+\begin{tabularx}{\textwidth}{@{}lXXlll@{}}
+\toprule
+Study & Routed unit & Reported cost signal & Support-qualified & Physical energy & Pre-fit audit \\
+\midrule
+Adaptive-RAG & no / single / iterative retrieval & retrieval depth & no & no & no \\
+RAGRouter & retrieval-augmented generator & latency & no & no & no \\
+X-Router & direct / RAG / CoT composition & tokens and latency & no & no & no \\
+LLMRouterBench & language-model endpoint & price and latency & no & no & oracle gap \\
+Electro & retriever, depth, and generator configuration & measured energy & no & yes & no \\
+This study & generator, retrieval, memory, and guard action & T4 generation energy & yes & yes & five gates \\
+\bottomrule
+\end{tabularx}
+\end{table*}

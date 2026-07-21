@@ -1,0 +1,11 @@
+candidate_route_id,a00_dominates,same_board,success_difference_a00_minus_candidate,energy_difference_a00_minus_candidate
+A01_tiny_bm25,True,True,0.125,-102.96914618265457
+A02_tiny_dense,True,True,0.125,-95.69525323500649
+A03_tiny_hybrid,True,True,0.125,-88.44180447522307
+A04_small_direct,True,False,0.125,-202.2613016412211
+A08_tiny_memory_flat,True,False,0.125,-94.2468927991135
+A09_tiny_memory_hier,True,False,0.125,-115.60384640284043
+A10_tiny_memory_graph,True,False,0.125,-116.77332947456749
+A12_small_hybrid_both,True,False,0.125,-203.82735182767505
+A13_small_hybrid_verified,True,False,0.125,-206.13635390250585
+M16_tiny_grounded_verified,True,True,0.125,-146.72128101135297

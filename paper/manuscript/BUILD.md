@@ -9,11 +9,15 @@ From the repository root:
 
 ```powershell
 python scripts/build_manuscript_assets.py
+python scripts/render_manuscript_figures.py
 ```
 
 The command fails if the frozen clean or robustness trace counts change. It
-regenerates the manuscript tables, vector figures, route-to-board audit, robustness
-route summaries, and the Granite-1B output-format audit.
+regenerates the manuscript tables, vector figures, action-pool routability audit,
+retrieval-to-utilization decomposition, task-aware oracle analysis,
+route-to-board audit, robustness summaries, and Granite-1B output-format audit.
+The second command renders the three principal diagnostic figures to publication-
+resolution PNG files without changing their trace-derived values.
 
 ## Compile with Tectonic
 
@@ -35,8 +39,9 @@ python -m unittest tests.test_paper_results tests.test_manuscript -q
 ```
 
 The checks reject unresolved citations/references, numeric claims that disagree
-with the frozen CSV/JSON evidence, forbidden whole-system/carbon claims, missing
-figures/tables, and absent disclosure of the Stage-06 protocol amendment.
+with the frozen CSV/JSON evidence, incorrect route-pool headroom, forbidden
+whole-system/carbon claims, missing figures/tables, and absent disclosure of the
+Stage-06 protocol amendment or the post-hoc status of the routability diagnosis.
 
 ## Package the submission artifacts
 
@@ -48,6 +53,14 @@ python scripts/package_manuscript.py
 
 This creates `output/pdf/E2AM_MemRAG_Paper.pdf` and a deterministic
 `output/latex/E2AM_MemRAG_Overleaf.zip` with `main.tex` at the archive root.
+
+After all sources and validation reports are final, refresh the paper-level
+checksum inventory and verify it without rewriting any manuscript file:
+
+```powershell
+python scripts/update_paper_manifest.py
+python -m unittest tests.test_paper_results -q
+```
 
 ## Measurement boundary
 
