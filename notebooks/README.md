@@ -1,6 +1,6 @@
 # Kaggle run order for E2AM-MemRAG v3
 
-These 22 notebooks are standalone. Do not attach a source-code dataset and do not
+These 23 notebooks are standalone. Do not attach a source-code dataset and do not
 edit a lane, branch, repository, or worker ID. A dual-T4 Kaggle session is
 acceptable, but the first code cell exposes only GPU 0 before importing Torch or
 any CUDA-aware package.
@@ -37,6 +37,7 @@ successful run ends with both `REMOTE_CLOSURE_VERIFIED` and `STAGE_COMPLETE`.
 | 8 | `07_evaluate_frozen_clean_lane_00.ipynb` ... `lane_03.ipynb` | four different collaborators in parallel |
 | 9 | `08_run_robustness_lane_00.ipynb` ... `lane_03.ipynb` | only after all four step-8 gates pass |
 | 10 | `09_aggregate_audit_and_release.ipynb` | coordinator last |
+| 11 | `10_consolidate_verified_hf_release.ipynb` | after Stage 09; CPU-only paper-facing publication, with no experiment rerun |
 
 The filename already contains its immutable ownership. Send different lane files
 to collaborators; no one needs to configure a lane manually.
